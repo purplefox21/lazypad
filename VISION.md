@@ -37,12 +37,15 @@
 
 ## Akıllı özellikler
 - **Söz kesme:** Claude konuşurken araya girebilirsin ("dur, onu yapma") ve Claude hemen susar.
-- **Sesle geri alma:** "Son değişikliği geri al" dediğinde git checkpoint'ine döner.
+- **Geri sarma:** Her söylenen şey kayıtlı kalır; tahtadaki zaman çizgisinden "▶️ tekrar dinle" ile geri sarıp dinlersin (podcast gibi).
 - **Önem filtresi:** Her bilgi ✅ yapıldı / ⚠️ bilmen gereken / ❓ karar diye etiketlenir. Ses sadece ⚠️ ve ❓ için çalışır.
 - **"Bana anlat" modu:** Bir dosyayı ya da akışı seçersin, Claude onu tahtada öğretmen gibi çizerek anlatır.
 
+## Form: MCP sunucusu
+Ürün bir **MCP sunucusu** olarak yaşar: `claude mcp add codeeasy` ile Claude Code'a bağlanır (VS Code içinde de terminalde de aynı). Tahta, sunucunun açtığı yerel bir web sayfasıdır; VS Code eklentisi sonradan sadece bu sayfayı yan panelde gösteren ince bir kabuk olur.
+
 ## Yol haritası
-1. **MVP:** MCP sunucusu (`draw`, `say`, `ask`) + tarayıcıda tahta (Mermaid) + tarayıcı TTS'i
-2. Deepgram (veya benzeri) ile kaliteli Türkçe ses + push-to-talk ile konuşma
+1. **MVP:** MCP sunucusu (`draw`, `say`, `ask`) + tarayıcıda tahta (Mermaid) + Apple sistem sesi (macOS `say`, TR) + geri sarılabilir ses zaman çizgisi
+2. Deepgram (veya benzeri) ile daha kaliteli Türkçe ses + push-to-talk ile konuşma
 3. Agent SDK ile Claude Code'u kendi içinde çalıştırma, söz kesme ve sesle geri alma
 4. VS Code eklentisi (tahta yan panelde) + mobil tahta
