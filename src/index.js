@@ -96,12 +96,44 @@ function tryOpenBrowser(url) {
   } catch { /* tarayıcı açılamazsa sorun değil, URL loglandı */ }
 }
 
-listen(BASE_PORT);
+// ---------------------------------------------------------------------------
+// `codeeasy setup` → Claude Code'a tek komutla bağla
+// ---------------------------------------------------------------------------
+if (process.argv[2] === "setup") {
+  const self = fileURLToPath(import.meta.url);
+  const args = ["mcp", "add", "--scope", "user", "codeeasy", "--", process.execPath, self];
+  console.log("codeeasy: Claude Code'a ekleniyor…");
+  const r = spawn("claude", args, { stdio: "inherit", shell: process.platform === "win32" });
+  r.on("exit", (code) => {
+    if (code === 0) {
+      console.log("\n✓ Hazır. Claude Code'u (yeniden) başlat — tahta kendiliğinden açılacak.");
+    } else {
+      console.log("\nOtomatik ekleme olmadı. Elle şunu çalıştır:\n  claude " +
+        args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(" "));
+    }
+    process.exit(code ?? 1);
+  });
+  r.on("error", () => {
+    console.log("`claude` komutu bulunamadı. Önce Claude Code'u kur: https://claude.com/claude-code");
+    process.exit(1);
+  });
+} else {
+  listen(BASE_PORT);
+}
 
 // ---------------------------------------------------------------------------
 // MCP sunucusu — Claude'un kullanacağı araçlar
 // ---------------------------------------------------------------------------
-const mcp = new McpServer({ name: "codeeasy", version: "0.1.0" });
+const INSTRUCTIONS = `CodeEasy is the user's voice + visual board. The user does NOT want to read long text.
+Rules while working:
+- Call \`step\` for each meaningful step (status doing when starting, done/fail when finished).
+- Tell important things with \`say\`: max 2 short sentences, the user's language. Use level "warn" only for things the user must know.
+- Explain flows, architecture and cause→effect with \`draw\` (small Mermaid diagram) instead of long text.
+- Ask with \`ask\` ONLY for decisions that are hard to reverse or truly the user's call; decide routine things yourself. Put the recommended option first.
+- Never use emojis in say/draw/step/ask content.
+- In the chat itself keep replies to 3-5 short lines; the board carries the rest.`;
+
+const mcp = new McpServer({ name: "codeeasy", version: "0.2.0" }, { instructions: INSTRUCTIONS });
 
 mcp.tool(
   "say",
@@ -180,7 +212,7 @@ mcp.tool(
   }
 );
 
-if (!process.env.CODEEASY_TEST) {
+if (!process.env.CODEEASY_TEST && process.argv[2] !== "setup") {
   await mcp.connect(new StdioServerTransport());
   console.error("codeeasy: MCP bağlı (say, draw, step, ask hazır)");
 }

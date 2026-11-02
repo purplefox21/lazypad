@@ -153,6 +153,24 @@
   }
   @keyframes breathe { 50% { transform: scale(1.08); } }
 
+  .ibtn svg, .replay svg, .unlock svg { width: 17px; height: 17px; }
+  .replay svg { width: 13px; height: 13px; margin-left: 2px; }
+  .ibtn.on { color: var(--q); }
+  .card.old { opacity: .5; transition: opacity .4s; }
+  .card.old:hover { opacity: 1; }
+  .keys { display: grid; gap: 6px; font-size: 13px; color: var(--dim); }
+  kbd {
+    font: 11px/1 ui-monospace, "SF Mono", monospace; padding: 3px 6px; border-radius: 6px;
+    border: 1px solid var(--stroke); background: var(--glass-hi); color: var(--text);
+  }
+  .unlock {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 11;
+    display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-radius: 999px;
+    color: var(--text); font: inherit; font-size: 14px; cursor: pointer; animation: rise .5s both; white-space: nowrap;
+  }
+  .unlock.hide { display: none; }
+  .hint { margin-top: 10px; font-size: 13px; }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
@@ -164,9 +182,9 @@
 <div class="top glass">
   <div class="orb off" id="orb" title="bağlantı / konuşma"></div>
   <div class="now" id="now"><span class="dim">Bekliyor</span></div>
-  <button class="ibtn" id="muteBtn" title="Sesi aç/kapat">🔊</button>
-  <button class="ibtn" id="stopBtn" title="Sus">✋</button>
-  <button class="ibtn" id="setBtn" title="Ayarlar">⋯</button>
+  <button class="ibtn" id="stopBtn" title="Sus  (Esc)" data-icon="stop"></button>
+  <button class="ibtn" id="muteBtn" title="Sesi kapat  (M)" data-icon="volume"></button>
+  <button class="ibtn" id="setBtn" title="Ayarlar" data-icon="more"></button>
 </div>
 
 <div class="pop glass" id="stepsPop">
@@ -176,12 +194,22 @@
 <div class="pop glass" id="setPop">
   <h3>Ses</h3>
   <select id="voiceSel"></select>
+  <h3 style="margin-top:14px">Kısayollar</h3>
+  <div class="keys">
+    <span><kbd>Space</kbd> son mesajı tekrar dinle</span>
+    <span><kbd>Esc</kbd> sus</span>
+    <span><kbd>M</kbd> sesi aç / kapat</span>
+    <span><kbd>1</kbd>–<kbd>4</kbd> karar seçeneğini seç</span>
+  </div>
 </div>
+
+<button class="unlock glass" id="unlock"><span data-icon="volume"></span>Sesi açmak için dokun</button>
 
 <main class="feed" id="feed">
   <div class="hello" id="hello">
     <div class="big-orb"></div>
     Claude çalışmaya başlayınca<br>burada çizip anlatacak.
+    <div class="hint">Bu sekmeyi açık bırak, gerisini o halleder.</div>
   </div>
 </main>
 
@@ -189,6 +217,17 @@
 import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
 
 const $ = (s) => document.querySelector(s);
+
+// İnce çizgili ikonlar (Lucide tarzı), emoji yok
+const P = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON = {
+  volume: P('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'),
+  muted:  P('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>'),
+  stop:   P('<rect x="6" y="6" width="12" height="12" rx="2.5"/>'),
+  more:   P('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'),
+  play:   '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',
+};
+for (const el of document.querySelectorAll("[data-icon]")) el.innerHTML = ICON[el.dataset.icon];
 const feed = $("#feed"), stepsEl = $("#steps"), orb = $("#orb"), nowEl = $("#now");
 const dark = !matchMedia("(prefers-color-scheme: light)").matches;
 mermaid.initialize({
@@ -240,6 +279,7 @@ voiceSel.onchange = () => { try { localStorage.setItem("ce.voice", voiceSel.valu
 
 function speak(text, cardEl) {
   if (muted) return;
+  if (!unlocked) { queued.length = 0; queued.push({ text, el: cardEl }); return; }
   try {
     const u = new SpeechSynthesisUtterance(text);
     const v = voices.find((x) => x.name === voiceSel.value);
@@ -259,7 +299,42 @@ function hush() {
   for (const c of document.querySelectorAll(".playing")) c.classList.remove("playing");
 }
 $("#stopBtn").onclick = hush;
-$("#muteBtn").onclick = (e) => { muted = !muted; e.currentTarget.textContent = muted ? "🔇" : "🔊"; if (muted) hush(); };
+function toggleMute() {
+  muted = !muted;
+  $("#muteBtn").innerHTML = muted ? ICON.muted : ICON.volume;
+  $("#muteBtn").title = muted ? "Sesi aç  (M)" : "Sesi kapat  (M)";
+  if (muted) hush();
+}
+$("#muteBtn").onclick = toggleMute;
+
+// Tarayıcılar ilk dokunuştan önce konuşmaya izin vermez → bir kere kilidi aç
+let unlocked = false;
+function unlock() {
+  if (unlocked) return;
+  unlocked = true;
+  $("#unlock").classList.add("hide");
+  try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch {}
+  for (const t of queued.splice(0)) speak(t.text, t.el);
+}
+const queued = [];
+$("#unlock").onclick = unlock;
+document.addEventListener("pointerdown", unlock, { once: true });
+document.addEventListener("keydown", unlock, { once: true });
+
+// Klavye kısayolları
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("select, input, textarea")) return;
+  if (e.key === "Escape") hush();
+  else if (e.key === "m" || e.key === "M") toggleMute();
+  else if (e.key === " ") {
+    e.preventDefault();
+    const last = [...feed.querySelectorAll(".card[data-say]")].pop();
+    if (last) { hush(); speak(last.dataset.say, last); }
+  } else if (/^[1-4]$/.test(e.key)) {
+    const open = [...feed.querySelectorAll(".ask:not(.answered)")].pop();
+    open?.querySelectorAll(".opts button")[Number(e.key) - 1]?.click();
+  }
+});
 
 // ---------- kartlar ----------
 const fmt = (t) => new Date(t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
@@ -271,11 +346,15 @@ function addCard(cls, html) {
   d.className = "card glass " + cls;
   d.innerHTML = html;
   feed.appendChild(d);
+  const cards = feed.querySelectorAll(".card");
+  cards.forEach((c, i) => c.classList.toggle("old", i < cards.length - 3 && !c.matches(".ask:not(.answered)")));
   requestAnimationFrame(() => d.scrollIntoView({ behavior: "smooth", block: "center" }));
   return d;
 }
 function withReplay(d, text) {
+  d.dataset.say = text;
   const b = d.querySelector(".replay");
+  if (b) b.innerHTML = ICON.play;
   if (b) b.onclick = () => { hush(); speak(text, d); };
 }
 
@@ -284,7 +363,7 @@ function onSay(ev, silent) {
     <div class="row">
       <div class="dot"></div>
       <div class="body">${esc(ev.text)}<div class="time">${fmt(ev.at)}</div></div>
-      <button class="replay" title="Tekrar dinle">▶</button>
+      <button class="replay" title="Tekrar dinle  (Space)"></button>
     </div>`);
   withReplay(d, ev.text);
   if (!silent) speak(ev.text, d);
@@ -324,9 +403,9 @@ function onAsk(ev, silent) {
     <div class="row">
       <div class="body">
         <div class="q">${esc(ev.question)}</div>
-        <div class="opts">${ev.options.map((o) => `<button>${esc(o)}</button>`).join("")}</div>
+        <div class="opts">${ev.options.map((o, i) => `<button title="Kısayol: ${i + 1}">${esc(o)}</button>`).join("")}</div>
       </div>
-      <button class="replay" title="Tekrar dinle">▶</button>
+      <button class="replay" title="Tekrar dinle  (Space)"></button>
     </div>`);
   d.dataset.askId = ev.id;
   d.querySelectorAll(".opts button").forEach((b, i) => {

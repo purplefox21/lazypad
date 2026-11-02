@@ -1,51 +1,36 @@
-# CodeEasy 🎧
+# CodeEasy
 
-**Claude Code için sesli + görsel tahta.** Claude çalışırken uzun metin yazmak yerine
-tahtaya **şema çizer**, önemli şeyleri **sesli söyler** ve kararları **tek tuşluk kartlarla** sorar.
-Söylediklerini zaman çizgisinden **geri sarıp tekrar dinleyebilirsin**.
+**Claude Code için sesli ve görsel tahta.** Claude çalışırken uzun metin yazmak yerine
+tahtaya şema çizer, önemli şeyleri sesli söyler ve kararları tek tıklık kartlarla sorar.
+Kaçırdığın her cümleyi geri sarıp tekrar dinleyebilirsin.
 
-## Kurulum (2 dakika)
+## Kurulum
 
 ```bash
 git clone https://github.com/purplefox21/codeeasy && cd codeeasy
 npm install
+npm run setup
 ```
 
-Claude Code'a bağla (proje klasöründe çalıştır):
+Bitti. Claude Code'u başlattığında tahta tarayıcıda kendiliğinden açılır
+(açılmazsa adres: **http://localhost:4242**). Ekrana bir kere dokun, ses açılsın.
 
-```bash
-claude mcp add codeeasy -- node /TAM/YOL/codeeasy/src/index.js
-```
+Kurallar sunucunun içinde gömülü. CLAUDE.md'ye bir şey eklemen gerekmez,
+Claude bağlandığı anda "kısa yaz, çiz, konuş, gereksiz soru sorma" kurallarını alır.
 
-Claude Code'u başlattığında tahta kendiliğinden tarayıcıda açılır
-(açılmazsa: **http://localhost:4242**). Ses, macOS'ta Apple'ın kendi
-sesleriyle çalışır — üstteki menüden Türkçe sesi (örn. **Yelda**) seç.
+## Kullanım
 
-## Claude'a kuralları öğret
-
-Projenin `CLAUDE.md` dosyasına şunu ekle:
-
-```markdown
-## CodeEasy kuralları
-- Çalışırken her anlamlı adımda `step` çağır (başlarken doing, bitince done/fail).
-- Önemli bilgileri `say` ile söyle: en fazla 2 cümle. Önemliyse level=warn.
-- Akış, mimari, sebep→sonuç gibi şeyleri uzun metinle DEĞİL `draw` ile şema çizerek anlat.
-- Sadece geri alınması zor kararları `ask` ile sor; rutin kararları kendin ver.
-- Sohbete uzun metin yazma: en fazla 3-5 satır özet yeter, gerisi tahtada.
-```
-
-## Tahtada neler var
-
-| | |
+| Kısayol | Ne yapar |
 |---|---|
-| 🗺️ Şemalar | Claude Mermaid ile çizer, tahta anında gösterir |
-| 🔊 Sesli anlatım | Her `say` seslendirilir; ⚠️ uyarılar sarı çizgiyle işaretlenir |
-| ▶️ Tekrar dinle | Kaçırdığın her cümleyi zaman çizgisinden geri sarıp dinlersin |
-| ❓ Karar kartları | Önerilen seçenek ilk sırada, tek tıkla cevaplarsın |
-| ⏳ Adımlar | Sol panelde canlı ilerleme listesi |
-| ✋ Dur | Konuşmayı anında keser; 🔇 ile tamamen susturursun |
+| `Space` | Son mesajı tekrar dinle |
+| `Esc` | Sus |
+| `M` | Sesi aç / kapat |
+| `1`–`4` | Açık karar kartında seçeneği seç |
+
+Ses, macOS'ta Apple'ın kendi sesleriyle çalışır. Sağ üstteki menüden Türkçe sesi
+(örneğin Yelda) seç, seçimin hatırlanır.
 
 ## Yol haritası
 
-`VISION.md` dosyasına bak: Deepgram ile daha kaliteli ses, push-to-talk ile
-sesle konuşma, "bana anlat" modu, telefon bildirimi, VS Code yan paneli.
+`VISION.md`: Deepgram ile daha kaliteli ses, sesle konuşma (push-to-talk),
+"bana anlat" modu, telefon bildirimi, VS Code yan paneli.
