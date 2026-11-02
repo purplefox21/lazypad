@@ -3,239 +3,366 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CodeEasy Tahta</title>
+<title>CodeEasy</title>
 <style>
   :root {
-    --bg: #0f1117; --panel: #161a23; --card: #1d2230; --line: #2a3142;
-    --text: #e8eaf0; --dim: #8b93a7; --ok: #3ddc84; --warn: #ffb224;
-    --q: #6ea8ff; --fail: #ff5c5c; --accent: #8a7dff;
+    --bg: #0b0c12;
+    --glass: rgba(255,255,255,.055);
+    --glass-hi: rgba(255,255,255,.09);
+    --stroke: rgba(255,255,255,.08);
+    --text: rgba(255,255,255,.88);
+    --dim: rgba(255,255,255,.45);
+    --ok: #5eead4; --warn: #fbbf24; --q: #a78bfa; --fail: #fb7185;
+    --blob1: #6d5dfc; --blob2: #22d3ee; --blob3: #f472b6;
+    --shadow: 0 8px 32px rgba(0,0,0,.25);
   }
-  :root:not([data-theme="light"]) body { background: var(--bg); }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f4f5fa; --glass: rgba(255,255,255,.55); --glass-hi: rgba(255,255,255,.8);
+      --stroke: rgba(20,20,40,.07); --text: rgba(15,16,30,.88); --dim: rgba(15,16,30,.45);
+      --ok: #0d9488; --warn: #d97706; --q: #7c3aed; --fail: #e11d48;
+      --shadow: 0 8px 32px rgba(40,40,90,.08);
+    }
+  }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+    margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden;
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  header {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line);
-    position: sticky; top: 0; z-index: 5;
+
+  /* ---------- yavaşça süzülen renk bulutları ---------- */
+  .blobs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .blobs i {
+    position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%;
+    filter: blur(90px); opacity: .22; animation: drift 28s ease-in-out infinite alternate;
   }
-  header h1 { font-size: 16px; margin: 0; flex: 1; }
-  header h1 .dot { color: var(--accent); }
-  button {
-    background: var(--card); color: var(--text); border: 1px solid var(--line);
-    border-radius: 8px; padding: 7px 14px; font-size: 14px; cursor: pointer;
+  .blobs i:nth-child(1) { background: var(--blob1); top: -18vmax; left: -12vmax; }
+  .blobs i:nth-child(2) { background: var(--blob2); bottom: -22vmax; right: -14vmax; animation-delay: -9s; }
+  .blobs i:nth-child(3) { background: var(--blob3); top: 30%; left: 55%; width: 30vmax; height: 30vmax; opacity: .12; animation-delay: -17s; }
+  @keyframes drift { to { transform: translate(6vmax, 4vmax) scale(1.08); } }
+
+  .glass {
+    background: var(--glass); border: 1px solid var(--stroke); box-shadow: var(--shadow);
+    backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
   }
-  button:hover { border-color: var(--accent); }
-  select { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px; max-width: 160px; }
-  main { display: grid; grid-template-columns: 240px 1fr; gap: 0; min-height: calc(100vh - 54px); }
-  @media (max-width: 700px) { main { grid-template-columns: 1fr; } #stepsPanel { border-right: 0; border-bottom: 1px solid var(--line); } }
-  #stepsPanel { background: var(--panel); border-right: 1px solid var(--line); padding: 14px 16px; }
-  #stepsPanel h2, #timelineWrap h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin: 0 0 10px; }
-  #steps { list-style: none; margin: 0; padding: 0; }
-  #steps li { display: flex; gap: 8px; align-items: baseline; padding: 5px 0; font-size: 14px; }
-  #steps li.done { color: var(--dim); }
-  #steps li.fail { color: var(--fail); }
-  #steps li .ico { width: 18px; text-align: center; }
-  #steps li.doing .ico { animation: pulse 1.2s infinite; }
-  @keyframes pulse { 50% { opacity: .3; } }
-  #timelineWrap { padding: 14px 16px 60px; max-width: 860px; width: 100%; margin: 0 auto; }
-  .item { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
-  .item .meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); margin-bottom: 4px; }
-  .item .meta .replay { margin-left: auto; padding: 3px 10px; font-size: 12px; }
-  .say.warn { border-left: 4px solid var(--warn); }
-  .say.ok { border-left: 4px solid var(--ok); }
-  .askCard { border-left: 4px solid var(--q); }
-  .askCard .opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .askCard .opts button { border-color: var(--q); }
-  .askCard .opts button:first-child { background: var(--q); color: #0b1020; font-weight: 600; }
-  .askCard.answered .opts button { opacity: .35; pointer-events: none; }
-  .askCard.answered .opts button.chosen { opacity: 1; outline: 2px solid var(--ok); }
-  .drawCard .mer { background: #fff0; overflow-x: auto; margin-top: 6px; }
-  .drawCard svg { max-width: 100%; height: auto; }
-  .drawCard .title { font-weight: 600; margin-bottom: 4px; }
-  pre.err { color: var(--fail); white-space: pre-wrap; font-size: 12px; }
-  #empty { color: var(--dim); text-align: center; margin-top: 15vh; }
-  #empty .big { font-size: 42px; }
-  #connDot { width: 9px; height: 9px; border-radius: 50%; background: var(--fail); }
-  #connDot.on { background: var(--ok); }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { } }
+
+  /* ---------- üst çubuk ---------- */
+  .top {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 10;
+    display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 12px;
+    border-radius: 999px; max-width: calc(100% - 32px);
+  }
+  .orb {
+    width: 14px; height: 14px; border-radius: 50%; flex: none;
+    background: radial-gradient(circle at 35% 35%, #fff, var(--blob1) 60%);
+    box-shadow: 0 0 0 0 rgba(109,93,252,.5); transition: transform .3s;
+  }
+  .orb.off { filter: grayscale(1); opacity: .4; }
+  .orb.speaking { animation: talk 1s ease-in-out infinite; }
+  @keyframes talk {
+    0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(109,93,252,.45); }
+    50% { transform: scale(1.25); box-shadow: 0 0 0 10px rgba(109,93,252,0); }
+  }
+  .now { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; cursor: pointer; }
+  .now .dim { color: var(--dim); }
+  .ibtn {
+    flex: none; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer;
+    background: transparent; color: var(--text); font-size: 15px; display: grid; place-items: center;
+    transition: background .2s;
+  }
+  .ibtn:hover { background: var(--glass-hi); }
+
+  /* ---------- adımlar / ayarlar açılır paneli ---------- */
+  .pop {
+    position: fixed; top: 64px; left: 50%; z-index: 9; width: min(340px, calc(100% - 32px));
+    border-radius: 18px; padding: 14px 16px;
+    opacity: 0; pointer-events: none; transform: translate(-50%, -6px); transition: .25s ease;
+  }
+  .pop.open { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  .pop h3 { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .steps li { display: flex; gap: 10px; align-items: center; padding: 4px 0; font-size: 14px; }
+  .steps li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
+  .steps li.done { color: var(--dim); }
+  .steps li.done::before { background: var(--ok); }
+  .steps li.fail::before { background: var(--fail); }
+  .steps li.doing::before { background: var(--q); animation: blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .empty-steps { color: var(--dim); font-size: 13px; }
+  select {
+    width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--stroke);
+    background: var(--glass-hi); color: var(--text); font: inherit; font-size: 14px;
+  }
+
+  /* ---------- akış ---------- */
+  .feed {
+    position: relative; z-index: 1; max-width: 640px; margin: 0 auto;
+    padding: 84px 16px 40vh; display: flex; flex-direction: column; gap: 12px;
+  }
+  .card {
+    border-radius: 20px; padding: 14px 18px; position: relative;
+    animation: rise .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+  .card .row { display: flex; gap: 12px; align-items: flex-start; }
+  .card .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; flex: none; background: var(--ok); }
+  .card.warn .dot { background: var(--warn); box-shadow: 0 0 12px var(--warn); }
+  .card .body { flex: 1; min-width: 0; }
+  .card .time { font-size: 11px; color: var(--dim); }
+  .replay {
+    flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--glass-hi); color: var(--text); font-size: 11px; display: grid; place-items: center;
+    opacity: .5; transition: opacity .2s, transform .2s;
+  }
+  .card:hover .replay { opacity: 1; }
+  .replay:hover { transform: scale(1.08); }
+  .card.playing .replay { opacity: 1; background: var(--q); color: #fff; }
+
+  .draw .title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .draw .mer { overflow-x: auto; display: flex; justify-content: center; padding: 4px 0; }
+  .draw svg { max-width: 100%; height: auto; }
+  .draw pre { color: var(--fail); white-space: pre-wrap; font-size: 12px; margin: 0; }
+
+  .ask { border-color: color-mix(in srgb, var(--q) 45%, transparent); }
+  .ask::after {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+    box-shadow: 0 0 40px -8px var(--q); opacity: .5; animation: glow 2.4s ease-in-out infinite;
+  }
+  .ask.answered::after { display: none; }
+  @keyframes glow { 50% { opacity: .15; } }
+  .ask .q { font-weight: 600; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .opts button {
+    border: 1px solid var(--stroke); background: var(--glass-hi); color: var(--text);
+    border-radius: 999px; padding: 8px 16px; font: inherit; font-size: 14px; cursor: pointer;
+    transition: transform .15s, background .2s, opacity .3s;
+  }
+  .opts button:hover { transform: translateY(-1px); }
+  .opts button:first-child { background: var(--q); border-color: transparent; color: #fff; }
+  .ask.answered .opts button { opacity: .25; pointer-events: none; }
+  .ask.answered .opts button.chosen { opacity: 1; }
+  .ask.answered .opts button.chosen::before { content: "✓ "; }
+
+  .hello { text-align: center; color: var(--dim); margin-top: 22vh; animation: rise .8s both; }
+  .hello .big-orb {
+    width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 18px;
+    background: radial-gradient(circle at 35% 35%, #fff, var(--blob1) 55%, var(--blob2));
+    animation: breathe 4s ease-in-out infinite; box-shadow: 0 0 60px -10px var(--blob1);
+  }
+  @keyframes breathe { 50% { transform: scale(1.08); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <div id="connDot" title="bağlantı"></div>
-  <h1>CodeEasy <span class="dot">●</span> Tahta</h1>
-  <select id="voiceSel" title="Ses"></select>
-  <button id="muteBtn" title="Sesi aç/kapat">🔊</button>
-  <button id="stopBtn" title="Konuşmayı kes">✋ Dur</button>
-</header>
-<main>
-  <aside id="stepsPanel">
-    <h2>Adımlar</h2>
-    <ul id="steps"></ul>
-  </aside>
-  <section id="timelineWrap">
-    <h2>Zaman çizgisi</h2>
-    <div id="empty"><div class="big">🎧</div>Claude çalışmaya başlayınca<br>burada çizecek ve anlatacak.</div>
-    <div id="timeline"></div>
-  </section>
+<div class="blobs"><i></i><i></i><i></i></div>
+
+<div class="top glass">
+  <div class="orb off" id="orb" title="bağlantı / konuşma"></div>
+  <div class="now" id="now"><span class="dim">Bekliyor</span></div>
+  <button class="ibtn" id="muteBtn" title="Sesi aç/kapat">🔊</button>
+  <button class="ibtn" id="stopBtn" title="Sus">✋</button>
+  <button class="ibtn" id="setBtn" title="Ayarlar">⋯</button>
+</div>
+
+<div class="pop glass" id="stepsPop">
+  <h3>Adımlar</h3>
+  <ul class="steps" id="steps"><li class="empty-steps" style="display:block">Henüz adım yok</li></ul>
+</div>
+<div class="pop glass" id="setPop">
+  <h3>Ses</h3>
+  <select id="voiceSel"></select>
+</div>
+
+<main class="feed" id="feed">
+  <div class="hello" id="hello">
+    <div class="big-orb"></div>
+    Claude çalışmaya başlayınca<br>burada çizip anlatacak.
+  </div>
 </main>
 
 <script type="module">
 import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
-mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "loose" });
 
 const $ = (s) => document.querySelector(s);
-const timeline = $("#timeline"), stepsEl = $("#steps");
-let muted = false, ws = null, merId = 0;
-const stepMap = new Map(); // label -> li
+const feed = $("#feed"), stepsEl = $("#steps"), orb = $("#orb"), nowEl = $("#now");
+const dark = !matchMedia("(prefers-color-scheme: light)").matches;
+mermaid.initialize({
+  startOnLoad: false, securityLevel: "strict", theme: "base",
+  fontFamily: "-apple-system, Inter, system-ui, sans-serif",
+  themeVariables: dark ? {
+    background: "transparent", primaryColor: "rgba(255,255,255,0.06)", primaryBorderColor: "rgba(167,139,250,0.55)",
+    primaryTextColor: "#e9e9f2", lineColor: "rgba(255,255,255,0.35)", fontSize: "14px",
+    clusterBkg: "rgba(255,255,255,0.03)", edgeLabelBackground: "transparent",
+  } : {
+    background: "transparent", primaryColor: "rgba(255,255,255,0.7)", primaryBorderColor: "rgba(124,58,237,0.45)",
+    primaryTextColor: "#1a1b2e", lineColor: "rgba(20,20,40,0.35)", fontSize: "14px",
+    edgeLabelBackground: "transparent",
+  },
+  flowchart: { curve: "basis", padding: 14 },
+  themeCSS: ".node rect, .node polygon { rx: 12px; ry: 12px; stroke-width: 1px; }",
+});
 
-// ---------- Ses (Apple sistem sesleri: macOS'ta Yelda vb.) ----------
+let muted = false, ws = null, merId = 0, current = null;
+const stepMap = new Map();
+
+// ---------- popover'lar ----------
+function toggle(pop) {
+  for (const p of document.querySelectorAll(".pop")) if (p !== pop) p.classList.remove("open");
+  pop.classList.toggle("open");
+}
+nowEl.onclick = () => toggle($("#stepsPop"));
+$("#setBtn").onclick = () => toggle($("#setPop"));
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".pop, .top")) for (const p of document.querySelectorAll(".pop")) p.classList.remove("open");
+});
+
+// ---------- ses (macOS'ta Apple sistem sesleri, örn. Yelda) ----------
 const voiceSel = $("#voiceSel");
 let voices = [];
+const savedVoice = (() => { try { return localStorage.getItem("ce.voice"); } catch { return null; } })();
 function loadVoices() {
   try {
     voices = speechSynthesis.getVoices();
-    voiceSel.innerHTML = "";
-    const sorted = [...voices].sort((a, b) =>
-      (b.lang.startsWith("tr") ? 1 : 0) - (a.lang.startsWith("tr") ? 1 : 0));
-    for (const v of sorted) {
-      const o = document.createElement("option");
-      o.value = v.name; o.textContent = `${v.name} (${v.lang})`;
-      voiceSel.appendChild(o);
-    }
-  } catch { /* ses yoksa sessiz devam */ }
+    if (!voices.length) return;
+    const sorted = [...voices].sort((a, b) => (b.lang.startsWith("tr") - a.lang.startsWith("tr")));
+    voiceSel.innerHTML = sorted.map((v) => `<option>${v.name}</option>`).join("");
+    if (savedVoice && voices.some((v) => v.name === savedVoice)) voiceSel.value = savedVoice;
+  } catch {}
 }
 loadVoices();
 try { speechSynthesis.onvoiceschanged = loadVoices; } catch {}
+voiceSel.onchange = () => { try { localStorage.setItem("ce.voice", voiceSel.value); } catch {} };
 
-function speak(text) {
+function speak(text, cardEl) {
   if (muted) return;
   try {
     const u = new SpeechSynthesisUtterance(text);
     const v = voices.find((x) => x.name === voiceSel.value);
     if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "tr-TR";
+    u.rate = 1.02;
+    u.onstart = () => { orb.classList.add("speaking"); cardEl?.classList.add("playing"); };
+    u.onend = u.onerror = () => {
+      cardEl?.classList.remove("playing");
+      if (!speechSynthesis.speaking) orb.classList.remove("speaking");
+    };
     speechSynthesis.speak(u);
-  } catch { /* TTS engelliyse sessiz devam */ }
+  } catch {}
 }
-$("#stopBtn").onclick = () => { try { speechSynthesis.cancel(); } catch {} };
-$("#muteBtn").onclick = (e) => {
-  muted = !muted;
-  e.target.textContent = muted ? "🔇" : "🔊";
-  if (muted) { try { speechSynthesis.cancel(); } catch {} }
-};
+function hush() {
+  try { speechSynthesis.cancel(); } catch {}
+  orb.classList.remove("speaking");
+  for (const c of document.querySelectorAll(".playing")) c.classList.remove("playing");
+}
+$("#stopBtn").onclick = hush;
+$("#muteBtn").onclick = (e) => { muted = !muted; e.currentTarget.textContent = muted ? "🔇" : "🔊"; if (muted) hush(); };
 
-// ---------- Yardımcılar ----------
-const fmtTime = (t) => new Date(t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-function card(cls, at, replayText) {
-  $("#empty")?.remove();
+// ---------- kartlar ----------
+const fmt = (t) => new Date(t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function addCard(cls, html) {
+  $("#hello")?.remove();
   const d = document.createElement("div");
-  d.className = "item " + cls;
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  meta.textContent = fmtTime(at);
-  if (replayText) {
-    const b = document.createElement("button");
-    b.className = "replay"; b.textContent = "▶️ tekrar dinle";
-    b.onclick = () => speak(replayText);
-    meta.appendChild(b);
-  }
-  d.appendChild(meta);
-  timeline.appendChild(d);
-  d.scrollIntoView({ behavior: "smooth", block: "end" });
+  d.className = "card glass " + cls;
+  d.innerHTML = html;
+  feed.appendChild(d);
+  requestAnimationFrame(() => d.scrollIntoView({ behavior: "smooth", block: "center" }));
   return d;
 }
+function withReplay(d, text) {
+  const b = d.querySelector(".replay");
+  if (b) b.onclick = () => { hush(); speak(text, d); };
+}
 
-// ---------- Olay işleyiciler ----------
 function onSay(ev, silent) {
-  const d = card("say " + (ev.level || "ok"), ev.at, ev.text);
-  const p = document.createElement("div");
-  p.textContent = (ev.level === "warn" ? "⚠️ " : "") + ev.text;
-  d.appendChild(p);
-  if (!silent) speak(ev.text);
+  const d = addCard("say " + (ev.level || "ok"), `
+    <div class="row">
+      <div class="dot"></div>
+      <div class="body">${esc(ev.text)}<div class="time">${fmt(ev.at)}</div></div>
+      <button class="replay" title="Tekrar dinle">▶</button>
+    </div>`);
+  withReplay(d, ev.text);
+  if (!silent) speak(ev.text, d);
 }
 
 async function onDraw(ev) {
-  const d = card("drawCard", ev.at, null);
-  const t = document.createElement("div");
-  t.className = "title"; t.textContent = "🗺️ " + ev.title;
-  d.appendChild(t);
-  const box = document.createElement("div");
-  box.className = "mer";
-  d.appendChild(box);
+  const d = addCard("draw", `<div class="title">${esc(ev.title)}</div><div class="mer"></div><div class="time">${fmt(ev.at)}</div>`);
   try {
-    const { svg } = await mermaid.render("mer" + (++merId), ev.mermaid);
-    box.innerHTML = svg;
-  } catch (err) {
-    box.innerHTML = `<pre class="err">şema çizilemedi:\n${ev.mermaid}</pre>`;
+    const { svg } = await mermaid.render("m" + (++merId), ev.mermaid);
+    d.querySelector(".mer").innerHTML = svg;
+  } catch {
+    d.querySelector(".mer").innerHTML = `<pre>${esc(ev.mermaid)}</pre>`;
   }
 }
 
 function onStep(ev) {
+  stepsEl.querySelector(".empty-steps")?.remove();
   let li = stepMap.get(ev.label);
   if (!li) {
     li = document.createElement("li");
-    const ico = document.createElement("span"); ico.className = "ico";
-    const lbl = document.createElement("span"); lbl.textContent = ev.label;
-    li.append(ico, lbl);
+    li.textContent = ev.label;
     stepsEl.appendChild(li);
     stepMap.set(ev.label, li);
   }
   li.className = ev.status;
-  li.querySelector(".ico").textContent =
-    ev.status === "done" ? "✅" : ev.status === "fail" ? "❌" : "⏳";
+  const total = stepMap.size;
+  const done = [...stepMap.values()].filter((l) => l.className === "done").length;
+  if (ev.status === "doing") current = ev.label;
+  else if (current === ev.label) current = null;
+  nowEl.innerHTML = current
+    ? `${esc(current)}… <span class="dim">${done}/${total}</span>`
+    : `<span class="dim">${done}/${total} adım tamam</span>`;
 }
 
 function onAsk(ev, silent) {
-  const d = card("askCard", ev.at, ev.question);
+  const d = addCard("ask", `
+    <div class="row">
+      <div class="body">
+        <div class="q">${esc(ev.question)}</div>
+        <div class="opts">${ev.options.map((o) => `<button>${esc(o)}</button>`).join("")}</div>
+      </div>
+      <button class="replay" title="Tekrar dinle">▶</button>
+    </div>`);
   d.dataset.askId = ev.id;
-  const q = document.createElement("div");
-  q.textContent = "❓ " + ev.question;
-  q.style.fontWeight = "600";
-  d.appendChild(q);
-  const opts = document.createElement("div");
-  opts.className = "opts";
-  for (const opt of ev.options) {
-    const b = document.createElement("button");
-    b.textContent = opt;
+  d.querySelectorAll(".opts button").forEach((b, i) => {
     b.onclick = () => {
-      ws?.send(JSON.stringify({ type: "answer", id: ev.id, choice: opt }));
-      markAnswered(ev.id, opt);
+      ws?.send(JSON.stringify({ type: "answer", id: ev.id, choice: ev.options[i] }));
+      markAnswered(ev.id, ev.options[i]);
     };
-    opts.appendChild(b);
-  }
-  d.appendChild(opts);
-  if (!silent) speak("Bir kararın var: " + ev.question);
+  });
+  withReplay(d, ev.question);
+  if (!silent) speak(ev.question, d);
 }
 
 function markAnswered(id, choice) {
-  const d = timeline.querySelector(`[data-ask-id="${id}"]`);
-  if (!d) return;
+  const d = feed.querySelector(`[data-ask-id="${id}"]`);
+  if (!d || d.classList.contains("answered")) return;
   d.classList.add("answered");
-  for (const b of d.querySelectorAll(".opts button"))
-    if (b.textContent === choice) b.classList.add("chosen");
+  d.querySelectorAll(".opts button").forEach((b) => { if (b.textContent === choice) b.classList.add("chosen"); });
 }
 
 function handle(ev, silent = false) {
-  if (ev.type === "say") onSay(ev, silent);
-  else if (ev.type === "draw") onDraw(ev);
-  else if (ev.type === "step") onStep(ev);
-  else if (ev.type === "ask") onAsk(ev, silent);
-  else if (ev.type === "answered") markAnswered(ev.id, ev.choice);
-  else if (ev.type === "backlog") for (const e of ev.events) handle(e, true);
+  switch (ev.type) {
+    case "say": return onSay(ev, silent);
+    case "draw": return onDraw(ev);
+    case "step": return onStep(ev);
+    case "ask": return onAsk(ev, silent);
+    case "answered": return markAnswered(ev.id, ev.choice);
+    case "backlog": for (const e of ev.events) handle(e, true);
+  }
 }
 
-// ---------- WebSocket ----------
+// ---------- bağlantı ----------
 function connect() {
   ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
-  ws.onopen = () => $("#connDot").classList.add("on");
+  ws.onopen = () => orb.classList.remove("off");
   ws.onmessage = (m) => { try { handle(JSON.parse(m.data)); } catch {} };
-  ws.onclose = () => {
-    $("#connDot").classList.remove("on");
-    setTimeout(connect, 1500);
-  };
+  ws.onclose = () => { orb.classList.add("off"); setTimeout(connect, 1500); };
 }
 connect();
 </script>

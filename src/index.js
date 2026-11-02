@@ -64,7 +64,7 @@ wss.on("connection", (ws) => {
 });
 
 function broadcast(event) {
-  if (event.type !== "answered") history.push(event);
+  history.push(event);
   const data = JSON.stringify(event);
   for (const client of wss.clients) {
     if (client.readyState === 1) client.send(data);
