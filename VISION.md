@@ -44,6 +44,10 @@
 ## Form: MCP sunucusu
 Ürün bir **MCP sunucusu** olarak yaşar: `claude mcp add codeeasy` ile Claude Code'a bağlanır (VS Code içinde de terminalde de aynı). Tahta, sunucunun açtığı yerel bir web sayfasıdır; VS Code eklentisi sonradan sadece bu sayfayı yan panelde gösteren ince bir kabuk olur.
 
+## Durum (v0.3)
+Bitenler: MCP araçları, otomatik takip (hook'lar), çok projeli sekmeli tahta, Mac uygulaması
+(cam pencere, yerel ses, her zaman üstte), kaçırılanları dinleme, konuşma seviyesi, macOS bildirimleri.
+
 ## Yol haritası
 1. **MVP:** MCP sunucusu (`draw`, `say`, `ask`) + tarayıcıda tahta (Mermaid) + Apple sistem sesi (macOS `say`, TR) + geri sarılabilir ses zaman çizgisi
 2. Deepgram (veya benzeri) ile daha kaliteli Türkçe ses + push-to-talk ile konuşma

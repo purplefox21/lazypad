@@ -1,14 +1,20 @@
 {
   "name": "codeeasy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Claude Code için sesli + görsel tahta: Claude çizer, konuşur, sen karar verirsin.",
   "type": "module",
-  "bin": { "codeeasy": "src/index.js" },
+  "bin": {
+    "codeeasy": "src/index.js"
+  },
   "scripts": {
     "start": "node src/index.js",
-    "setup": "node src/index.js setup"
+    "setup": "node src/index.js setup",
+    "app": "node src/index.js app",
+    "uninstall": "node src/index.js uninstall"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "ws": "^8.18.0",
