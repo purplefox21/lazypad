@@ -6,7 +6,7 @@ import { basename, join, relative, isAbsolute } from "node:path";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { ROOT, PORT, HOST, BASE, readConfig, findApp } from "./shared.js";
+import { ROOT, PORT, HOST, BASE, readConfig, writeConfig, findApp } from "./shared.js";
 
 const BOARD_HTML = join(ROOT, "board", "index.html");
 const MAX_EVENTS = 3000;
@@ -93,6 +93,34 @@ function notifyMac(title, text) {
       "-e", "end run", title, text,
     ], { stdio: "ignore", detached: true }).unref();
   } catch {}
+}
+
+// ---------------------------------------------------------------- anlatım modu
+// visual: önce görsel, balanced: dengeli, text: yazıyla
+let explain = readConfig().explain || "visual";
+const VISUAL_GUIDE =
+  "Pick the form by the content: flow, architecture, call order, cause->effect -> `draw` (Mermaid flowchart / sequenceDiagram / mindmap / stateDiagram); " +
+  "options, comparisons, before/after -> `show` kind=table or kind=compare; numbers, sizes, trends, timings -> `show` kind=chart; " +
+  "key takeaways or a summary of many points -> `show` kind=points. One visual per idea, small and labeled in the user's language.";
+const MODE_CONTEXT = {
+  visual:
+    "[CodeEasy] Explanation mode: VISUAL. The user is tired of reading; explain on the CodeEasy board instead of in text. " +
+    VISUAL_GUIDE + " In the chat reply write at most 3 short lines (outcome first); no long paragraphs, no markdown tables or bullet walls in chat.",
+  balanced:
+    "[CodeEasy] Explanation mode: BALANCED. Put anything with structure (flows, comparisons, numbers) on the CodeEasy board. " +
+    VISUAL_GUIDE + " Keep the chat reply concise (about 8 lines max).",
+  text:
+    "[CodeEasy] Explanation mode: TEXT. The user wants a written explanation; write it clearly in chat. Board visuals are optional.",
+};
+const WANTS_TEXT = /(yazıyla|metinle|metin olarak|yazarak|detaylı (yaz|anlat)|uzun uzun|açıklama yaz|in text|write it out)/i;
+const WANTS_VISUAL = /(çiz|şema|görsel(le)?|diyagram|grafik|tabloyla|tablo (yap|olarak)|draw|diagram|chart|visuali[sz]e)/i;
+
+function contextFor(prompt = "") {
+  let mode = explain;
+  let note = "";
+  if (WANTS_TEXT.test(prompt)) { mode = "text"; note = " (The user explicitly asked for text this time.)"; }
+  else if (WANTS_VISUAL.test(prompt)) { mode = "visual"; note = " (The user explicitly asked for a visual this time.)"; }
+  return MODE_CONTEXT[mode] + note;
 }
 
 // ---------------------------------------------------------------- hook olayları
@@ -217,8 +245,15 @@ const server = http.createServer((req, res) => {
       let body = "";
       req.on("data", (c) => { body += c; if (body.length > 2e6) req.destroy(); });
       req.on("end", async () => {
-        res.end("ok");
-        try { await handleHook(JSON.parse(body)); } catch {}
+        let h = null;
+        try { h = JSON.parse(body); } catch {}
+        if (h?.hook_event_name === "UserPromptSubmit") {
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({
+            hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: contextFor(h.prompt) },
+          }));
+        } else res.end("");
+        try { if (h) await handleHook(h); } catch {}
       });
       return;
     }
@@ -243,6 +278,7 @@ wss.on("connection", (ws, req) => {
       const turn = turnFor(tab.key);
       if (m.type === "say") { turn.said = true; emit({ type: "say", tab: tab.key, text: m.text, level: m.level }); }
       else if (m.type === "draw") emit({ type: "draw", tab: tab.key, title: m.title, mermaid: m.mermaid });
+      else if (m.type === "show") emit({ type: "show", tab: tab.key, kind: m.kind, title: m.title, data: m.data });
       else if (m.type === "step") {
         emit({ type: "step", tab: tab.key, label: m.label, status: m.status });
         if (m.status === "doing") setState(tab, "working");
@@ -259,9 +295,15 @@ wss.on("connection", (ws, req) => {
 
   boards.add(ws);
   ws.on("close", () => boards.delete(ws));
-  ws.send(JSON.stringify({ type: "backlog", tabs: [...tabs.values()], events: history }));
+  ws.send(JSON.stringify({ type: "backlog", tabs: [...tabs.values()], events: history, explain }));
   ws.on("message", (raw) => {
     let m; try { m = JSON.parse(String(raw)); } catch { return; }
+    if (m.type === "explain" && MODE_CONTEXT[m.mode]) {
+      explain = m.mode;
+      writeConfig({ explain });
+      sendBoards({ type: "explain", mode: explain });
+      return;
+    }
     if (m.type === "answer" && askOwners.has(m.id)) {
       const owner = askOwners.get(m.id);
       askOwners.delete(m.id);

@@ -34,6 +34,26 @@ Claude oturumu C ─┘                                  her proje kendi sekmesi
 | **Otomatik** (hook'lar) | Senin mesajın, değişen dosyalar, çalışan komutlar, "seni bekliyor" uyarısı, iş bitince kısa sesli özet | Hayır, hiç kaçmaz, token harcamaz |
 | **Akıllı** (MCP araçları) | Şemalar (`draw`), önemli notlar (`say`), adımlar (`step`), karar kartları (`ask`) | Evet, Claude gerekli gördüğünde kullanır |
 
+## Az metin, çok görsel
+
+Claude anlatacağı şeyin türüne göre biçim seçer:
+
+| İçerik | Tahtada |
+|---|---|
+| Akış, mimari, çağrı sırası, sebep-sonuç | Şema (`draw`): akış, sıra, zihin haritası, durum şeması |
+| Seçenekler, karşılaştırma, önce/sonra | Tablo veya yan yana karşılaştırma (`show`) |
+| Sayılar, süreler, boyutlar, eğilim | Çubuk veya çizgi grafik (`show`) |
+| Birden fazla önemli nokta | Numaralı kartlar (`show`) |
+
+**Nasıl anlatsın** ayarı (tahtada, sağ üstteki menü): *Görsel* (varsayılan, sohbette en fazla 3 satır),
+*Dengeli* ya da *Metin*. Tercih her mesajda Claude'a otomatik iletilir.
+
+O anlık istisna için ayarı değiştirmen gerekmez, mesajında söylemen yeter:
+- "bunu **yazıyla / detaylı** anlat" → o mesaj için metin
+- "akışı **çiz**", "**şema / grafik / tabloyla**" → o mesaj için görsel
+
+Şemaya tıklayınca tam ekran büyür, grafiklerde "Tablo olarak gör" ile sayıları görürsün.
+
 ## Tahta
 
 - **Sekmeler:** Her proje bir sekme. Nokta rengi durumu gösterir: mor çalışıyor, turuncu seni bekliyor.
