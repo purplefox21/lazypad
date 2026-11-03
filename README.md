@@ -88,3 +88,9 @@ Derlemek için Xcode Komut Satırı Araçları gerekir (`xcode-select --install`
 
 Merkez sadece `127.0.0.1`'de dinler. Başka sitelerin tarayıcı üzerinden tahtana bağlanması
 ve karar kartlarını cevaplaması engellidir (origin kontrolü + özel başlık).
+
+## Lisans
+
+MIT + [Commons Clause](https://commonsclause.com/). Kullanmak, işte kullanmak, değiştirmek ve paylaşmak serbest.
+Yazılımı ya da değeri esas olarak bu yazılımdan gelen bir ürünü/hizmeti **satmak** serbest değil. Ayrıntılar: `LICENSE`.
+
