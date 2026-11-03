@@ -1,7 +1,7 @@
 # Lazypad: kodlamanın sesli ve görsel kokpiti
 
 > Claude çalışır, **tahtaya çizer, sesli anlatır.** Sen konuşursun ya da tek tuşla karar verirsin.
-> Okuma yok, uzun metin yok, karar yorgunluğu yok.
+> Az yazı okursun, her şeyi anlarsın: tahta sohbetin kopyası değil, görsel özetidir. Tam cevap her zaman sohbette durur.
 
 ## Sorun
 - Claude çok uzun yazıyor ve önemli bilgi kalabalığın içinde kayboluyor.
@@ -33,7 +33,7 @@
 | **MCP araçları** | Neyin önemli olduğuna Claude karar verir: `draw` ile şema çizer, `say` ile 1–2 cümle söyler, `ask` ile karar kartı açar, `step` ile ilerlemeyi gösterir |
 | **Beyin** | Claude Code'u Agent SDK ile çalıştırır. Konuşmayı metne (STT) ve metni konuşmaya (TTS) çevirir, olayları tahtaya iletir |
 | **Tahta** | Web sayfası. Şemayı adım adım çizer ve aynı anda seslendirir. Karar kartlarını gösterir |
-| **Kurallar** | Claude'a şu talimatlar verilir: "Ekrana en fazla 3 satır yaz. Önemli olanı çiz. Sadece geri alınması zor kararları sor." |
+| **Kurallar** | Claude'a şu talimatlar verilir: "Cevabı sohbette eksiksiz yaz. Önemli olanı tahtada da çiz. Sadece geri alınması zor kararları sor." |
 
 ## Akıllı özellikler
 - **Söz kesme:** Claude konuşurken araya girebilirsin ("dur, onu yapma") ve Claude hemen susar.
@@ -47,6 +47,10 @@
 ## Durum (v0.3)
 Bitenler: MCP araçları, otomatik takip (hook'lar), çok projeli sekmeli tahta, Mac uygulaması
 (cam pencere, yerel ses, her zaman üstte), kaçırılanları dinleme, konuşma seviyesi, macOS bildirimleri.
+
+Tahtadan cevap verme de var: yazı, izin, seçenekli soru, plan düzeltmesi. Claude'un ara mesajları ve tam cevabı kaybolmadan akışta durur.
+
+Henüz yok: sesle konuşma (STT), söz kesme, Agent SDK ile çalıştırma. Ses şimdilik tek yönlü: Claude konuşur, sen yazar ya da tıklarsın.
 
 ## Yol haritası
 1. **MVP:** MCP sunucusu (`draw`, `say`, `ask`) + tarayıcıda tahta (Mermaid) + Apple sistem sesi (macOS `say`, TR) + geri sarılabilir ses zaman çizgisi

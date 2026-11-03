@@ -8,11 +8,19 @@
  *   lazypad app             Sadece Mac uygulamasını (yeniden) derle
  *   lazypad open            Tahtayı şimdi aç
  *   lazypad mode <m>        Tahta nerede açılsın: auto | app | browser | none
- *   lazypad stop            Merkezi kapat
- *   lazypad hub | hook      (iç kullanım)
+ *   lazypad stop            Merkezi kapat (Claude bir sonraki işte yeniden başlatır)
+ *   lazypad hub | hook | wait   (iç kullanım)
  */
-import { spawn } from "node:child_process";
-import { BASE, ensureHub, writeConfig, findApp, readConfig } from "./shared.js";
+import { BASE, ensureHub, launchBoard, probeHub, readConfig, stopHub, writeConfig } from "./shared.js";
+
+const USAGE = `Kullanım: lazypad <komut>
+
+  setup              Claude Code'a bağla, hook'ları ve Mac uygulamasını kur
+  uninstall          Hepsini geri al
+  app                Mac uygulamasını yeniden derle
+  open [browser]     Tahtayı şimdi aç
+  mode <m>           Tahta nerede açılsın: auto | app | browser | none
+  stop               Merkezi kapat (Claude bir sonraki işte yeniden başlatır)`;
 
 const [cmd, arg] = process.argv.slice(2);
 
@@ -26,11 +34,14 @@ switch (cmd) {
   case "hook":
     await import("./hook.js");
     break;
+  case "wait":
+    await import("./wait.js");
+    break;
   case "setup":
-    (await import("./setup.js")).setup();
+    await (await import("./setup.js")).setup();
     break;
   case "uninstall":
-    (await import("./setup.js")).uninstall();
+    await (await import("./setup.js")).uninstall();
     break;
   case "app":
     (await import("./setup.js")).buildApp();
@@ -45,20 +56,26 @@ switch (cmd) {
     break;
   }
   case "open": {
-    await ensureHub();
-    const app = findApp();
-    const useApp = app && (arg || readConfig().open) !== "browser";
-    const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-    spawn(opener, useApp ? ["-a", app] : [BASE], { stdio: "ignore", detached: true, shell: process.platform === "win32" }).unref();
-    console.log(useApp ? "Uygulama açılıyor" : `Tarayıcıda açılıyor: ${BASE}`);
+    if (!await ensureHub()) {
+      console.log(await probeHub() === "foreign"
+        ? `${BASE} başka bir uygulama tarafından kullanılıyor. LAZYPAD_PORT ile başka bir port seç.`
+        : "Merkez başlatılamadı.");
+      process.exitCode = 1;
+      break;
+    }
+    const where = launchBoard(arg || readConfig().open);
+    console.log(where === "app" ? "Uygulama açılıyor" : `Tarayıcıda açılıyor: ${BASE}`);
     break;
   }
   case "stop":
-    try {
-      await fetch(`${BASE}/shutdown`, { method: "POST", headers: { "x-lazypad": "1" } });
-      console.log("Merkez kapatıldı");
-    } catch { console.log("Merkez zaten kapalı"); }
+    console.log(await stopHub() ? "Merkez kapatıldı" : "Merkez zaten kapalı");
+    break;
+  case "help":
+  case "--help":
+  case "-h":
+    console.log(USAGE);
     break;
   default:
-    console.log("Bilinmeyen komut. Kullanım için: src/index.js dosyasının başına bak");
+    console.log(`Bilinmeyen komut: ${cmd}\n\n${USAGE}`);
+    process.exitCode = 1;
 }

@@ -17,7 +17,7 @@
     --shadow: 0 8px 32px rgba(0,0,0,.25);
   }
   @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
+    :root {
       --bg: #f4f5fa; --glass: rgba(255,255,255,.55); --glass-hi: rgba(255,255,255,.8);
       --stroke: rgba(20,20,40,.07); --text: rgba(15,16,30,.88); --dim: rgba(15,16,30,.45);
       --ok: #0d9488; --warn: #d97706; --q: #7c3aed; --fail: #e11d48;
@@ -85,6 +85,13 @@
     text-align: center; background: var(--q); color: #fff; display: none;
   }
   .tab .badge.on { display: inline-block; }
+  .tab .close {
+    display: none; width: 16px; height: 16px; margin-right: -5px; border-radius: 50%;
+    place-items: center; color: var(--dim);
+  }
+  .tab .close svg { width: 11px; height: 11px; }
+  .tab.idle:hover .close { display: grid; }
+  .tab .close:hover { background: var(--glass-hi); color: var(--text); }
   .ibtn {
     flex: none; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer;
     background: transparent; color: var(--text); display: grid; place-items: center; transition: background .2s, color .2s;
@@ -112,6 +119,7 @@
     opacity: 0; pointer-events: none; transform: translate(-50%, -6px); transition: .25s ease;
   }
   .native .pop { background: rgba(30,30,40,.75); }
+  .pop .note { margin-top: 8px; font-size: 12px; }
   .pop { background: color-mix(in srgb, var(--bg) 82%, transparent); }
   .pop.open { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
   .pop h3 { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
@@ -152,8 +160,10 @@
   .card {
     border-radius: 20px; padding: 14px 18px; position: relative;
     animation: rise .5s cubic-bezier(.2,.8,.2,1) both; transition: opacity .4s;
+    scroll-margin: 100px 0 150px; /* kaydırınca üst çubuğun ve alttaki yazı kutusunun altında kalmasın */
   }
   @keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+  .replaying .card { animation: none; }
   .card.old { opacity: .5; }
   .card.old:hover { opacity: 1; }
   .row { display: flex; gap: 12px; align-items: flex-start; }
@@ -184,7 +194,8 @@
   }
 
   .draw .title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
-  .draw .mer { overflow-x: auto; display: flex; justify-content: center; padding: 4px 0; }
+  .draw .mer { overflow-x: auto; display: flex; padding: 4px 0; }
+  .draw .mer svg { flex: none; margin: 0 auto; } /* otomatik kenar: taşan şemanın solu kaydırılabilir kalır */
   .draw svg { max-width: 100%; height: auto; }
   .draw .mer { cursor: zoom-in; }
   .zoom {
@@ -192,7 +203,11 @@
     background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     animation: rise .25s both;
   }
-  .zoom svg { width: min(1400px, 100%) !important; max-width: none !important; height: auto; max-height: 100%; }
+  .zoom > svg { width: min(1400px, 100%) !important; max-width: none !important; height: auto; max-height: 100%; }
+  .zoom img { max-width: none; border-radius: 12px; cursor: zoom-in; }
+  .zoom.actual { display: block; overflow: auto; }
+  .zoom.actual img { cursor: zoom-out; }
+  .zclose { position: fixed; top: 14px; right: 14px; z-index: 1; background: var(--glass-hi); }
   .draw pre { color: var(--fail); white-space: pre-wrap; font-size: 12px; margin: 0; }
 
   .ask, .attn { border-color: color-mix(in srgb, var(--q) 45%, transparent); }
@@ -217,11 +232,121 @@
   .opts button:first-child { background: var(--q); border-color: transparent; color: #fff; }
   .ask.answered .opts button { opacity: .25; pointer-events: none; }
   .ask.answered .opts button.chosen { opacity: 1; }
+  .note { margin-top: 10px; font-size: 13px; color: var(--dim); }
+  .note:empty { display: none; }
 
   .done .dot { background: var(--ok); }
   .link { border: 0; background: none; color: var(--q); font: inherit; font-size: 13px; padding: 4px 0 0; cursor: pointer; }
-  .full { display: none; white-space: pre-wrap; font-size: 13.5px; color: var(--dim); margin-top: 8px; max-height: 50vh; overflow: auto; }
-  .done.open .full { display: block; }
+  .md { font-size: 14.5px; }
+  .md h4 { margin: 16px 0 4px; font-size: 14.5px; font-weight: 650; }
+  .md p { margin: 6px 0; }
+  .md > :first-child { margin-top: 2px; }
+  .md ol, .md ul { margin: 6px 0; padding-left: 22px; }
+  .md li { margin: 6px 0; }
+  .md ol li::marker { color: var(--q); font-weight: 600; }
+  .md code { font: 12.5px ui-monospace, "SF Mono", monospace; padding: 1px 5px; border-radius: 5px; background: var(--glass-hi); }
+  .md pre { margin: 8px 0; padding: 10px 12px; border-radius: 10px; overflow-x: auto; background: var(--glass); font: 12.5px/1.5 ui-monospace, "SF Mono", monospace; }
+  .md .twrap { margin: 8px 0; }
+  .qbox {
+    margin-top: 12px; padding: 10px 14px; border-radius: 14px; font-weight: 600;
+    border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent); background: color-mix(in srgb, var(--warn) 12%, transparent);
+  }
+  .quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .quick button, .typed button, .sendq, .sendmulti {
+    border: 1px solid var(--stroke); background: var(--glass-hi); color: var(--text); border-radius: 999px;
+    padding: 7px 14px; font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer;
+  }
+  /* Bitti kartı: özet cümle ve soru görünür; tam metin yalnızca düğmeyle açılır */
+  .done > .row .md { display: none; margin-top: 10px; }
+  .done.full > .row .md { display: block; }
+  .done .link::after { content: "Tamamını göster"; }
+  .done.full .link::after { content: "Gizle"; }
+  .card.old .quick { display: none; }
+  .quick button:disabled { opacity: .45; cursor: default; }
+  .prompt .retry { padding: 0; font-size: 11.5px; }
+  .card.old .retry { display: none; } /* eski bir "Evet" yanlışlıkla yeniden gitmesin */
+  /* Ara mesajlar: tek satır, tıklayınca açılır */
+  .interim { padding: 7px 18px; box-shadow: none; color: var(--dim); cursor: pointer; }
+  .interim .md { font-size: 13px; }
+  .interim:not(.open) .md { max-height: 1.5em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .interim:not(.open) .md > * { margin: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Claude'un serbest sayfası */
+  .pagec .title { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .pagec iframe { display: block; width: 100%; height: 120px; border: 0; background: transparent; }
+  .pframe { position: relative; }
+  .zhit { position: absolute; padding: 0; border: 0; background: transparent; cursor: zoom-in; border-radius: 10px; }
+  .zhit:hover, .zhit:focus-visible { outline: 2px solid var(--q); outline-offset: 2px; }
+  .prompt .from { margin-top: 4px; font-size: 11.5px; color: var(--dim); }
+  .prompt.failed { background: color-mix(in srgb, var(--fail) 16%, transparent); }
+
+  /* ---------- kartlardaki yazı kutuları ---------- */
+  .typed { display: flex; gap: 8px; margin-top: 10px; }
+  .typed input {
+    flex: 1; min-width: 0; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--stroke);
+    background: var(--glass); color: var(--text); font: inherit; font-size: 14px; outline: none;
+  }
+  .typed input:focus { border-color: var(--q); }
+  .sendq, .sendmulti { display: block; margin-top: 10px; }
+  .answered .typed, .answered .sendq, .answered .sendmulti, .answered .hint2 { display: none; }
+  .opts button.sel { background: var(--q); border-color: transparent; color: #fff; }
+  .opts.multi button:first-child:not(.sel) { background: var(--glass-hi); border-color: var(--stroke); color: var(--text); }
+
+  /* ---------- izin, seçenekli soru, plan ---------- */
+  .hint2 { margin-top: 8px; font-size: 12px; color: var(--dim); }
+  .need .lbl { margin-bottom: 4px; }
+  .opts.perm button.allow { background: var(--ok); border-color: transparent; color: #06231f; font-weight: 600; }
+  .opts.perm button.deny { background: var(--glass-hi); border-color: var(--stroke); color: var(--text); }
+  .answered .opts.perm { display: none; }
+  .qq + .qq { margin-top: 16px; }
+  .optlist { display: grid; gap: 6px; margin-top: 10px; }
+  .optb {
+    display: block; width: 100%; text-align: left; padding: 9px 13px; border-radius: 12px; cursor: pointer;
+    border: 1px solid var(--stroke); background: var(--glass); color: var(--text); font: inherit; font-size: 14px;
+  }
+  .optb b { font-weight: 600; }
+  .optb span { display: block; font-size: 12.5px; color: var(--dim); margin-top: 1px; }
+  .optb:hover { background: var(--glass-hi); }
+  .optb.sel { border-color: var(--q); background: color-mix(in srgb, var(--q) 20%, transparent); }
+  .answered .optb { pointer-events: none; opacity: .6; }
+
+  /* ---------- plan, ilerleme, kod, fark, görsel, dosyalar ---------- */
+  .stepsc .title, .progressc .title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .steps li.todo { color: var(--dim); }
+  .bar { height: 8px; border-radius: 999px; background: var(--glass-hi); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 999px; background: var(--q); transition: width .3s; }
+  .progressc .count { margin-top: 6px; font-size: 12.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  pre.code, .diff {
+    margin: 0; padding: 10px 12px; border-radius: 10px; overflow-x: auto; background: var(--glass);
+    font: 12.5px/1.55 ui-monospace, "SF Mono", monospace; white-space: pre; max-height: 60vh; overflow-y: auto;
+  }
+  .srcpath { margin-bottom: 6px; font: 12px ui-monospace, "SF Mono", monospace; color: var(--dim); }
+  .diff .add { color: var(--ok); }
+  .diff .del { color: var(--fail); }
+  .diff .hunk { color: var(--q); }
+  .shot { display: block; max-width: 100%; border-radius: 12px; cursor: zoom-in; }
+  .caption { margin-top: 6px; font-size: 13px; color: var(--dim); }
+  .file { display: block; padding: 8px 12px; border-radius: 10px; background: var(--glass); color: var(--text); text-decoration: none; }
+  .file + .file { margin-top: 6px; }
+  .file:hover { background: var(--glass-hi); }
+  .file code { font: 12.5px ui-monospace, "SF Mono", monospace; color: var(--q); }
+  .file span { display: block; font-size: 12.5px; color: var(--dim); margin-top: 2px; }
+  a.chip { text-decoration: none; }
+  a.chip:hover { color: var(--q); }
+
+  /* ---------- yazı kutusu ---------- */
+  .composer {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 12;
+    display: flex; align-items: flex-end; gap: 6px; padding: 6px 6px 6px 16px;
+    border-radius: 22px; width: min(640px, calc(100% - 24px));
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+  }
+  .native .composer { background: rgba(30,30,40,.7); }
+  .composer[hidden] { display: none; }
+  .composer textarea {
+    flex: 1; min-width: 0; max-height: 130px; padding: 6px 0; border: 0; outline: none; resize: none;
+    background: transparent; color: var(--text); font: inherit; font-size: 14.5px; line-height: 1.45;
+  }
+  .composer textarea::placeholder { color: var(--dim); }
 
   /* ---------- show: tablo / grafik / karşılaştırma / noktalar ---------- */
   .show .title { font-weight: 600; font-size: 14px; margin-bottom: 10px; }
@@ -248,7 +373,7 @@
     --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --ring: #f4f5fa;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .viz { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --ring: #15161e; }
+    .viz { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --ring: #15161e; }
   }
   .viz svg { width: 100%; height: auto; display: block; overflow: visible; }
   .viz .ax { fill: var(--dim); font-size: 11px; font-variant-numeric: tabular-nums; }
@@ -283,7 +408,7 @@
 
   /* ---------- alt hap: ses kilidi / kaçırılanlar ---------- */
   .pill {
-    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 11;
+    position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 11;
     display: flex; align-items: center; gap: 10px; padding: 11px 18px; border-radius: 999px;
     color: var(--text); font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap;
     animation: rise .5s both;
@@ -315,12 +440,13 @@
 </div>
 <div class="pop glass" id="setPop">
   <div class="sec">
-    <h3>Nasıl anlatsın</h3>
+    <h3>Tahtada ne kadar göstersin</h3>
     <div class="seg" id="explainSeg">
-      <button data-v="visual" title="Çizim, tablo, grafik; sohbette en fazla 3 satır">Görsel</button>
-      <button data-v="balanced" title="Yapılı şeyler tahtada, metin kısa">Dengeli</button>
-      <button data-v="text" title="Yazıyla açıklasın">Metin</button>
+      <button data-v="visual" title="Yapılı her şey tahtada da görünsün">Görsel</button>
+      <button data-v="balanced" title="Akış ve karşılaştırmalar tahtada görünsün">Dengeli</button>
+      <button data-v="text" title="Tahta isteğe bağlı">Metin</button>
     </div>
+    <div class="note">Claude'un tam cevabı her modda sohbette kalır.</div>
   </div>
   <div class="sec">
     <h3>Ne kadar konuşsun</h3>
@@ -337,7 +463,8 @@
       <span><kbd>Space</kbd> son mesajı tekrar dinle</span>
       <span><kbd>Esc</kbd> sus</span>
       <span><kbd>M</kbd> sesi aç / kapat</span>
-      <span><kbd>1</kbd>–<kbd>4</kbd> karar seçeneğini seç</span>
+      <span><kbd>1</kbd>–<kbd>6</kbd> soru seçeneğini seç</span>
+      <span><kbd>/</kbd> yazı kutusuna geç</span>
       <span><kbd>[</kbd> <kbd>]</kbd> sekmeler arasında geç</span>
     </div>
   </div>
@@ -353,6 +480,11 @@
 
 <button class="pill glass" id="unlock" hidden><span data-icon="volume"></span>Sesi açmak için dokun</button>
 <button class="pill glass" id="catchup" hidden><span data-icon="play"></span><span id="catchupText"></span></button>
+<div class="pill glass" id="authHint" hidden>Bağlanamadı. Terminalde tahtayı şöyle aç: node src/index.js open</div>
+<div class="composer glass" id="composer" hidden>
+  <textarea id="composerText" rows="1" placeholder="Claude'a yaz…" title="Enter gönderir, Shift+Enter alt satır, / buraya gelir"></textarea>
+  <button class="ibtn" id="composerSend" title="Gönder" data-icon="send"></button>
+</div>
 
 <script type="module">
 const $ = (s) => document.querySelector(s);
@@ -367,6 +499,8 @@ const ICON = {
   stop:   P('<rect x="6" y="6" width="12" height="12" rx="2.5"/>'),
   more:   P('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'),
   pin:    P('<path d="M12 17v5"/><path d="M9 10.8V4h6v6.8l2.5 3.2h-11z"/>'),
+  close:  P('<path d="M6 6l12 12"/><path d="M18 6 6 18"/>'),
+  send:   P('<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>'),
   play:   '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',
 };
 for (const el of document.querySelectorAll("[data-icon]")) el.innerHTML = ICON[el.dataset.icon];
@@ -376,6 +510,11 @@ const store = {
   get(k, d) { try { return localStorage.getItem("lp." + k) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem("lp." + k, v); } catch {} },
 };
+// Erişim anahtarı adresin # kısmında gelir; saklanır ve adresten silinir
+const fromHash = location.hash.match(/^#t=([0-9a-f]+)$/);
+if (fromHash) store.set("token", fromHash[1]);
+if (location.hash) history.replaceState(null, "", location.pathname);
+
 let talk = store.get("talk", "important");
 for (const b of document.querySelectorAll("#talkSeg button")) {
   b.classList.toggle("on", b.dataset.v === talk);
@@ -390,26 +529,36 @@ function setExplain(mode) {
   document.querySelectorAll("#explainSeg button").forEach((b) => b.classList.toggle("on", b.dataset.v === mode));
 }
 document.querySelectorAll("#explainSeg button").forEach((b) => {
-  b.onclick = () => { setExplain(b.dataset.v); ws?.send(JSON.stringify({ type: "explain", mode: b.dataset.v })); };
+  b.onclick = () => { if (send({ type: "explain", mode: b.dataset.v })) setExplain(b.dataset.v); };
 });
 
 // ---------------------------------------------------------------- Mermaid (ilk şemada yüklenir)
 let mermaidP = null;
 const dark = () => !matchMedia("(prefers-color-scheme: light)").matches;
+// Şemaların renkleri ilk çizimde sabitlenir: sistem teması değişince baştan çiz
+matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => { if (mermaidP) location.reload(); });
 function getMermaid() {
-  mermaidP ??= import("https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs").then(({ default: m }) => {
+  mermaidP ??= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "/vendor/mermaid.min.js";
+    s.onload = () => resolve(globalThis.mermaid);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  }).then((m) => {
     m.initialize({
-      startOnLoad: false, securityLevel: "strict", theme: "base",
+      startOnLoad: false, securityLevel: "strict", theme: "base", suppressErrorRendering: true,
       fontFamily: "-apple-system, Inter, system-ui, sans-serif",
       themeVariables: dark() ? {
         background: "transparent", primaryColor: "rgba(255,255,255,0.06)", primaryBorderColor: "rgba(167,139,250,0.55)",
         primaryTextColor: "#e9e9f2", lineColor: "rgba(255,255,255,0.35)", fontSize: "14px", edgeLabelBackground: "transparent",
+        titleColor: "#e9e9f2", clusterBkg: "rgba(255,255,255,0.03)", clusterBorder: "rgba(255,255,255,0.18)",
       } : {
         background: "transparent", primaryColor: "rgba(255,255,255,0.7)", primaryBorderColor: "rgba(124,58,237,0.45)",
         primaryTextColor: "#1a1b2e", lineColor: "rgba(20,20,40,0.35)", fontSize: "14px", edgeLabelBackground: "transparent",
+        titleColor: "#1a1b2e", clusterBkg: "rgba(20,20,40,0.03)", clusterBorder: "rgba(20,20,40,0.15)",
       },
       flowchart: { curve: "basis", padding: 14 },
-      themeCSS: ".node rect, .node polygon { rx: 12px; ry: 12px; stroke-width: 1px; }",
+      themeCSS: ".node rect, .node polygon { rx: 12px; ry: 12px; stroke-width: 1px; } .edgeLabel, .edgeLabel p, .labelBkg { background: transparent !important; }",
     });
     return m;
   });
@@ -501,25 +650,32 @@ $("#pinBtn").onclick = () => {
 // ---------------------------------------------------------------- sekmeler
 const tabs = new Map(); // key -> { key, name, state, btn, feed, steps, current, unread[] }
 let active = null;
+let replaying = false;
+let boardBuild = null;
+
+function syncAttention(tab) {
+  if (tab.state !== "waiting") tab.feed.querySelectorAll(".attn:not(.resolved)").forEach((c) => c.classList.add("resolved"));
+}
 
 function ensureTab(t) {
   let tab = tabs.get(t.key);
   if (!tab) {
-    $("#hello")?.remove();
+    $("#hello").hidden = true;
     const btn = document.createElement("button");
     btn.className = "tab";
-    btn.innerHTML = `<span class="st"></span><span class="nm"></span><span class="badge"></span>`;
+    btn.innerHTML = `<span class="st"></span><span class="nm"></span><span class="badge"></span><span class="close" title="Sekmeyi kapat">${ICON.close}</span>`;
     btn.onclick = () => activate(t.key);
+    btn.querySelector(".close").onclick = (e) => { e.stopPropagation(); send({ type: "close_tab", key: t.key }); };
     $("#tabs").appendChild(btn);
     const feed = document.createElement("div");
     feed.className = "feed";
     $("#main").appendChild(feed);
-    tab = { key: t.key, name: t.name || "Claude", state: "idle", btn, feed, steps: new Map(), current: null, unread: [], cards: new Map() };
+    tab = { key: t.key, name: t.name || "Claude", state: "idle", btn, feed, steps: new Map(), current: null, unread: [], cards: new Map(), stepsCard: null, planTitle: null };
     tabs.set(t.key, tab);
     if (!active) activate(t.key);
   }
   if (t.name) tab.name = t.name;
-  if (t.state) tab.state = t.state;
+  if (t.state) { tab.state = t.state; syncAttention(tab); }
   tab.btn.querySelector(".nm").textContent = tab.name;
   tab.btn.className = "tab " + tab.state + (tab.key === active ? " active" : "");
   tab.btn.title = tab.key;
@@ -535,7 +691,33 @@ function activate(key) {
   const t = tabs.get(key);
   t.btn.scrollIntoView({ inline: "nearest", block: "nearest" });
   renderSteps(); renderCatchup();
+  t.feed.querySelectorAll("iframe").forEach(fitPage); // gizli sekmede ölçülemezdi
   t.feed.lastElementChild?.scrollIntoView({ block: "end" });
+  $("#composer").hidden = false;
+}
+
+function resetBoard() {
+  for (const t of tabs.values()) { t.btn.remove(); t.feed.remove(); }
+  tabs.clear();
+  active = null;
+  $("#hello").hidden = false;
+  $("#composer").hidden = true;
+  renderSteps(); renderCatchup();
+}
+
+function closeTab(key) {
+  const t = tabs.get(key);
+  if (!t) return;
+  const keys = [...tabs.keys()], i = keys.indexOf(key);
+  t.btn.remove(); t.feed.remove();
+  tabs.delete(key);
+  if (active !== key) return;
+  active = null;
+  const next = keys[i + 1] ?? keys[i - 1];
+  if (next) return activate(next);
+  $("#hello").hidden = false;
+  $("#composer").hidden = true;
+  renderSteps(); renderCatchup();
 }
 
 function setUnread(t) {
@@ -572,6 +754,17 @@ function renderSteps() {
   $("#status").textContent = t.current ? `${t.current}…  ${done}/${t.steps.size}` : `${done}/${t.steps.size} adım tamam`;
 }
 
+/** Akıştaki adım listesi: ana ilerleyiş yalnızca açılır panelde kalmasın. */
+function renderStepsCard(tab) {
+  if (!tab.steps.size) return;
+  const done = [...tab.steps.values()].filter((s) => s === "done").length;
+  const html = `<div class="title">${esc(tab.planTitle || "Adımlar")} · ${done}/${tab.steps.size}</div>
+    <ul class="steps">${[...tab.steps].map(([label, status]) => `<li class="${esc(status)}">${esc(label)}</li>`).join("")}</ul>`;
+  if (tab.stepsCard) tab.stepsCard.innerHTML = html;
+  else tab.stepsCard = addCard(tab, { id: `steps-${++stepsSeq}` }, "stepsc", html);
+}
+let stepsSeq = 0;
+
 // ---------------------------------------------------------------- kartlar
 const fmt = (t) => new Date(t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -594,8 +787,9 @@ function addCard(tab, ev, cls, html, sayText) {
   if (isNew) {
     // Yeni mesaj gelince önceki turun kartları soluklaşır; aynı cevabın görselleri parlak kalır
     if (cls === "prompt") tab.feed.querySelectorAll(".card").forEach((c) => { if (c !== d && !c.matches(".ask:not(.answered)")) c.classList.add("old"); });
-    tab.feed.querySelectorAll(".attn:not(.resolved)").forEach((c) => { if (c !== d) c.classList.add("resolved"); });
-    if (tab.key === active) requestAnimationFrame(() => d.scrollIntoView({ behavior: "smooth", block: "end" }));
+    if (cls === "attn") tab.feed.querySelectorAll(".attn:not(.resolved)").forEach((c) => { if (c !== d) c.classList.add("resolved"); });
+    // Ekrana sığmayan kartın başı görünsün
+    if (tab.key === active && !replaying) requestAnimationFrame(() => d.scrollIntoView({ behavior: "smooth", block: d.offsetHeight > innerHeight - 190 ? "start" : "end" }));
   }
   return d;
 }
@@ -604,7 +798,7 @@ function addCard(tab, ev, cls, html, sayText) {
 function announce(tab, el, text, kind, live) {
   if (!live) return;
   const levels = { all: ["say", "warn", "done", "attn", "ask"], important: ["warn", "done", "attn", "ask"], quiet: ["attn", "ask"] };
-  const allowed = levels[talk].includes(kind);
+  const allowed = (levels[talk] || levels.important).includes(kind);
   if (tab.key === active) { if (allowed) speak(text, el); return; }
   tab.unread.push({ text, el });
   setUnread(tab);
@@ -615,25 +809,60 @@ function announce(tab, el, text, kind, live) {
 function handle(ev, live = true) {
   if (ev.type === "explain") return setExplain(ev.mode);
   if (ev.type === "backlog") {
+    // Merkez yeni bir tahta sürümüyle döndüyse açık sayfa eski kodla kalmasın
+    if (boardBuild && ev.build !== boardBuild) return location.reload();
+    boardBuild = ev.build;
+    // Yeniden bağlanınca geçmiş baştan gelir: açık sekme korunur
+    const prev = active;
+    resetBoard();
     if (ev.explain) setExplain(ev.explain);
+    replaying = true;
+    document.body.classList.add("replaying");
     for (const t of ev.tabs) ensureTab(t);
     for (const e of ev.events) handle(e, false);
+    replaying = false;
+    for (const t of tabs.values()) syncAttention(t);
+    if (tabs.has(prev)) activate(prev);
+    else if (active) activate(active);
+    requestAnimationFrame(() => document.body.classList.remove("replaying"));
     return;
   }
   if (ev.type === "tab") return void ensureTab(ev.tab);
+  if (ev.type === "tab_closed") return closeTab(ev.key);
   const tab = ensureTab({ key: ev.tab || "claude" });
 
   switch (ev.type) {
-    case "prompt":
-      addCard(tab, ev, "prompt", `<div class="body">${esc(ev.text)}</div>`);
-      tab.steps.clear(); tab.current = null; if (tab.key === active) renderSteps();
+    case "prompt": {
+      const failed = ev.delivery === "failed";
+      const tag = ev.fromBoard ? `<div class="from">${DELIVERY[ev.delivery] || "Tahtadan"}${failed ? ` <button class="link retry">Tekrar gönder</button>` : ""}</div>` : "";
+      const d = addCard(tab, ev, "prompt" + (failed ? " failed" : ""), `<div class="body">${esc(ev.text)}</div>${tag}`);
+      const retry = d.querySelector(".retry");
+      if (retry) retry.onclick = () => { retry.disabled = true; send({ type: "reply", tab: tab.key, text: ev.text }); };
+      if (ev.upsert) break; // yalnızca iletim durumu güncellendi
+      tab.steps.clear(); tab.current = null; tab.stepsCard = null; tab.planTitle = null;
+      if (tab.key === active) renderSteps();
       break;
+    }
+
+    case "note": {
+      const d = addCard(tab, ev, "interim", `<div class="md">${renderBlocks(ev.blocks || [])}</div>`);
+      d.onclick = () => d.classList.toggle("open");
+      break;
+    }
+
+    case "page": {
+      const d = addCard(tab, ev, "pagec", `<div class="title">${esc(ev.title)}</div><div class="pframe"><iframe sandbox="allow-same-origin" title="${esc(ev.title)}"></iframe></div><div class="time">${fmt(ev.at)}</div>`);
+      const frame = d.querySelector("iframe");
+      frame.onload = () => fitPage(frame);
+      withDiagrams(ev.html, ev.id).then((html) => { frame.srcdoc = pageDoc(html); });
+      break;
+    }
 
     case "activity": {
       const parts = [];
       if (ev.files.length) parts.push(`${ev.files.length} dosya değişti`);
       if (ev.cmds) parts.push(`${ev.cmds} komut çalıştı`);
-      const chips = ev.files.slice(-8).map((f) => `<span class="chip" title="${esc(f)}">${esc(f.split("/").pop())}</span>`).join("");
+      const chips = ev.files.slice(-8).map((f) => `<a class="chip" href="${esc(fileUrl(tab.key, f))}" title="VS Code'da aç: ${esc(f)}">${esc(f.split("/").pop())}</a>`).join("");
       const more = ev.files.length > 8 ? `<span class="chip">+${ev.files.length - 8}</span>` : "";
       addCard(tab, ev, "activity", `<div class="sum">${parts.join(" · ")}</div>${chips || more ? `<div class="chips">${chips}${more}</div>` : ""}`);
       break;
@@ -650,54 +879,113 @@ function handle(ev, live = true) {
 
     case "draw": {
       const d = addCard(tab, ev, "draw", `<div class="title">${esc(ev.title)}</div><div class="mer"></div><div class="time">${fmt(ev.at)}</div>`);
-      getMermaid().then((m) => m.render("m" + ev.id.replace(/\W/g, ""), ev.mermaid))
+      const domId = "m" + ev.id.replace(/\W/g, "");
+      getMermaid().then(async (m) => {
+        const out = await m.render(domId, ev.mermaid);
+        // Soldan sağa şema dar tahtaya okunur boyutta sığmıyorsa yukarıdan aşağı çiz
+        const natural = Number(out.svg.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+)/)?.[1]);
+        const room = Math.min(innerWidth - 32, 640) - 36;
+        const sideways = /^\s*(graph|flowchart)\s+(LR|RL)\b/;
+        if (natural * 0.75 <= room || !sideways.test(ev.mermaid)) return out;
+        return m.render(domId + "v", ev.mermaid.replace(sideways, "$1 TD"));
+      })
         .then(({ svg }) => {
           const mer = d.querySelector(".mer");
           mer.innerHTML = svg;
+          // Geniş şema sığacak diye okunmaz hale gelmesin: gerekirse yatay kaydırılır
+          const el = mer.querySelector("svg"), natural = el.viewBox.baseVal?.width;
+          if (natural) el.style.minWidth = `${Math.round(natural * 0.75)}px`;
           mer.title = "Büyütmek için tıkla";
-          mer.onclick = () => {
-            const z = document.createElement("div");
-            z.className = "zoom"; z.appendChild(mer.querySelector("svg").cloneNode(true));
-            z.onclick = () => z.remove();
-            document.body.appendChild(z);
-          };
+          mer.onclick = () => zoom(mer.querySelector("svg").cloneNode(true));
         })
         .catch(() => { d.querySelector(".mer").innerHTML = `<pre>${esc(ev.mermaid)}</pre>`; });
       break;
     }
 
     case "show": {
-      const body = renderShow(ev);
+      const body = renderShow(ev, tab);
       const d = addCard(tab, ev, "show", `<div class="title">${esc(ev.title)}</div>${body}<div class="time">${fmt(ev.at)}</div>`);
       if (ev.kind === "chart") wireChart(d, ev.data);
+      if (ev.kind === "code") d.querySelector(".copy").onclick = () => copyText(ev.data.code);
+      const shot = d.querySelector(".shot");
+      if (shot) shot.onclick = () => zoom(shot.cloneNode());
       break;
     }
+
+    case "plan":
+      tab.steps = new Map(ev.steps.map((s) => [s, "todo"]));
+      tab.planTitle = ev.title || "Plan";
+      tab.current = null;
+      renderStepsCard(tab);
+      if (tab.key === active) renderSteps();
+      break;
 
     case "step":
       tab.steps.set(ev.label, ev.status);
       if (ev.status === "doing") tab.current = ev.label;
       else if (tab.current === ev.label) tab.current = null;
+      renderStepsCard(tab);
       if (tab.key === active) renderSteps();
       break;
 
+    case "progress": {
+      const pct = Math.max(0, Math.min(100, (ev.current / ev.total) * 100));
+      addCard(tab, ev, "progressc", `<div class="title">${esc(ev.label)}</div><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
+        <div class="count">${esc(fmtNum(ev.current))} / ${esc(fmtNum(ev.total))}${ev.unit ? " " + esc(ev.unit) : ""}</div>`);
+      break;
+    }
+
     case "ask": {
+      const options = ev.options || [];
       const d = addCard(tab, ev, "ask", `
         <div class="row"><div class="body">
           <div class="q">${esc(ev.question)}</div>
-          <div class="opts">${ev.options.map((o, i) => `<button title="Kısayol: ${i + 1}">${esc(o)}</button>`).join("")}</div>
+          ${options.length ? `<div class="opts${ev.multi ? " multi" : ""}">${options.map((o, i) => `<button title="Kısayol: ${i + 1}">${esc(o)}</button>`).join("")}</div>` : ""}
+          ${ev.multi ? `<button class="sendmulti">Seçtiklerimi gönder</button>` : ""}
+          <div class="typed"><input placeholder="${options.length ? "Ya da kendi cevabını yaz…" : "Cevabını yaz…"}" aria-label="Cevabın"><button>Gönder</button></div>
+          <div class="note"></div>
         </div>${replayBtn}</div>`, ev.question);
+      // Kart, cevap merkeze ulaşınca ("answered" olayı) kapanır
       d.querySelectorAll(".opts button").forEach((b, i) => {
-        b.onclick = () => {
-          ws?.send(JSON.stringify({ type: "answer", id: ev.id, choice: ev.options[i] }));
-          markAnswered(tab, ev.id, ev.options[i]);
-        };
+        b.onclick = () => ev.multi ? b.classList.toggle("sel") : send({ type: "answer", id: ev.id, choice: options[i] });
       });
+      if (ev.multi) d.querySelector(".sendmulti").onclick = () => {
+        const choices = options.filter((_, i) => d.querySelectorAll(".opts button")[i].classList.contains("sel"));
+        if (choices.length) send({ type: "answer", id: ev.id, choices });
+      };
+      wireTyped(d, (text) => send({ type: "answer", id: ev.id, text }));
       announce(tab, d, ev.question, "ask", live);
       break;
     }
 
     case "answered":
-      markAnswered(tab, ev.askId, ev.choice);
+      markAnswered(tab, ev.askId, ev);
+      break;
+
+    case "need": {
+      const d = addCard(tab, ev, `ask need ${ev.kind}`, needHTML(ev));
+      wireNeed(d, ev);
+      const say = ev.kind === "question" ? ev.questions?.[0]?.question : ev.kind === "plan" ? "Plan onayını bekliyor" : `${ev.tool} için iznini bekliyor`;
+      announce(tab, d, say, "ask", live);
+      break;
+    }
+
+    case "need_closed": {
+      const d = tab.cards.get(ev.needId);
+      if (!d) break;
+      d.classList.add("answered");
+      const note = d.querySelector(".note");
+      const text = ev.by === "board" ? ev.text : ev.text ? `VS Code'dan cevaplandı: ${ev.text}` : NEED_CLOSED[ev.by];
+      if (note) note.textContent = text || "";
+      break;
+    }
+
+    case "ask_closed":
+      closeAsk(tab, ev.askId, ev.reason);
+      break;
+
+    case "stopped":
+      addCard(tab, ev, "activity", `<div class="sum">Durduruldu · ${fmt(ev.at)}</div>`);
       break;
 
     case "attention": {
@@ -709,25 +997,53 @@ function handle(ev, live = true) {
     }
 
     case "done": {
-      const hasMore = ev.full && ev.full.trim() !== ev.summary.trim();
+      // Az yazı: özet cümle ve soru görünür, tam metin düğmeyle açılır. Sesli olarak özet ve varsa soru okunur.
+      const blocks = ev.blocks || [], q = ev.question, quick = ev.quick || [];
+      const isJustSummary = blocks.length === 1 && blocks[0].t === "p" && blocks[0].text.replace(/\*\*/g, "").trim() === ev.summary.trim();
+      const hasFull = blocks.length > 0 && !isJustSummary;
+      const qbox = q ? `<div class="qbox">${esc(q)}${quick.length ? `<div class="quick">${quick.map((x) => `<button>${esc(x)}</button>`).join("")}</div>` : ""}</div>` : "";
       const d = addCard(tab, ev, "done", `
         <div class="row"><div class="dot"></div>
-          <div class="body"><div class="lbl">Bitti</div>${esc(ev.summary)}
-            ${hasMore ? `<div class="full">${esc(ev.full)}</div><button class="link">Tamamını göster</button>` : ""}
-            <div class="time">${fmt(ev.at)}</div></div>${replayBtn}</div>`, ev.summary);
-      d.querySelector(".link")?.addEventListener("click", (e) => {
-        const open = d.classList.toggle("open");
-        e.target.textContent = open ? "Gizle" : "Tamamını göster";
+          <div class="body"><div class="lbl">Bitti${q ? " · sana bir sorusu var" : ""}</div>
+            ${esc(ev.summary)}${qbox}
+            ${hasFull ? `<div class="md">${renderBlocks(blocks)}</div><button class="link" title="Aç / kapat"></button>` : ""}
+            <div class="time">${fmt(ev.at)}</div></div>${replayBtn}</div>`, q && !ev.summary.includes(q) ? `${ev.summary} ${q}` : ev.summary);
+      d.querySelector(".link")?.addEventListener("click", () => d.classList.toggle("full"));
+      d.querySelectorAll(".quick button").forEach((b, i) => {
+        b.onclick = () => { // çift tıklama ikinci kez göndermesin
+          if (!send({ type: "reply", tab: tab.key, text: quick[i] })) return;
+          d.querySelectorAll(".quick button").forEach((x) => { x.disabled = true; });
+        };
       });
       // Claude bu turda zaten konuştuysa özeti tekrar okuma, sadece "Bitti" de
       announce(tab, d, ev.said ? "Bitti." : ev.summary, "done", live);
+      if (q) announce(tab, d, q, "attn", live);
       break;
     }
   }
 }
 
+// ---------------------------------------------------------------- cevap blokları
+// Önce kaçışlanır, sonra işaretler etikete çevrilir: cevaptan sayfaya HTML geçemez
+const inline = (s) => esc(s)
+  .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+  .replace(/`([^`]+)`/g, "<code>$1</code>")
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+function renderBlocks(blocks) {
+  return blocks.map((b) => {
+    if (b.t === "h") return `<h4>${inline(b.text)}</h4>`;
+    if (b.t === "p") return `<p>${inline(b.text)}</p>`;
+    if (b.t === "ul") return `<ul>${b.items.map((i) => `<li>${inline(i)}</li>`).join("")}</ul>`;
+    if (b.t === "ol") return `<ol start="${Number(b.start) || 1}">${b.items.map((i) => `<li>${inline(i)}</li>`).join("")}</ol>`;
+    if (b.t === "table") return tableHTML(b.columns, b.rows);
+    if (b.t === "code") return `<pre>${esc(b.text)}</pre>`;
+    return "";
+  }).join("");
+}
+
 // ---------------------------------------------------------------- show
-const isNum = (v) => typeof v === "number" || /^-?[\d.,]+\s*(%|ms|s|mb|kb|gb)?$/i.test(String(v).trim());
+const isNum =(v) => typeof v === "number" || /^-?[\d.,]+\s*(%|ms|s|mb|kb|gb)?$/i.test(String(v).trim());
 const fmtNum = (v) => typeof v === "number" ? v.toLocaleString("tr-TR", { maximumFractionDigits: 2 }) : v;
 
 function tableHTML(columns, rows) {
@@ -736,9 +1052,235 @@ function tableHTML(columns, rows) {
     <tbody>${rows.map((r) => `<tr>${columns.map((_, i) => `<td class="${numCol[i] ? "num" : ""}">${esc(fmtNum(r[i] ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
-function renderShow(ev) {
+// ---------------------------------------------------------------- Claude'un serbest sayfası
+// Sayfa kum havuzundaki bir çerçevede çizilir: içindeki hiçbir kod çalışmaz, dışarıdan hiçbir şey yüklenmez.
+const PAGE_CSS = `
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body { color: var(--text); font: 14.5px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-wrap: anywhere; }
+  body > :first-child { margin-top: 0; }
+  body > :last-child { margin-bottom: 0; }
+  h1, h2, h3, h4 { margin: 14px 0 6px; font-size: 14.5px; font-weight: 650; }
+  h1 { font-size: 17px; }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  img { display: block; max-width: 100%; height: auto; border-radius: 10px; }
+  svg { display: block; max-width: 100%; height: auto; margin: 6px auto; }
+  code { font: 12.5px ui-monospace, "SF Mono", monospace; padding: 1px 5px; border-radius: 5px; background: var(--soft); }
+  pre { margin: 8px 0; padding: 10px 12px; border-radius: 10px; overflow-x: auto; background: var(--soft); font: 12.5px/1.5 ui-monospace, "SF Mono", monospace; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13.5px; }
+  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--dim); }
+  th, td { padding: 7px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  a { color: var(--q); }
+  .lead { margin: 0 0 10px; font-size: 16px; font-weight: 650; line-height: 1.4; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 8px 0; }
+  .box { padding: 10px 12px; border-radius: 12px; background: var(--soft); }
+  .box > :first-child { margin-top: 0; }
+  .box > :last-child { margin-bottom: 0; }
+  .stat { padding: 10px 12px; border-radius: 12px; background: var(--soft); font-size: 12.5px; color: var(--dim); }
+  .stat b { display: block; font-size: 22px; line-height: 1.2; font-weight: 650; color: var(--text); font-variant-numeric: tabular-nums; }
+  .bars { display: grid; gap: 6px; margin: 8px 0; font-size: 13px; }
+  .bars > div { display: grid; grid-template-columns: minmax(60px, 30%) 1fr auto; align-items: center; gap: 8px; }
+  .bars span { color: var(--dim); }
+  .bars i { display: block; height: 10px; min-width: 2px; border-radius: 5px; background: var(--q); }
+  .bars b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--soft); }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--fail); } .dim { color: var(--dim); }
+  .bars i.ok { background: var(--ok); } .bars i.warn { background: var(--warn); } .bars i.bad { background: var(--fail); }
+`;
+
+function pageDoc(html) {
+  const css = getComputedStyle(document.documentElement);
+  const v = (name) => css.getPropertyValue(name).trim();
+  const vars = `:root { --text: ${v("--text")}; --dim: ${v("--dim")}; --line: ${v("--stroke")}; --soft: ${v("--glass-hi")}; --q: ${v("--q")}; --ok: ${v("--ok")}; --warn: ${v("--warn")}; --fail: ${v("--fail")}; }`;
+  // Yeni pencere açmak kum havuzunda yasak: bağlantıya tıklamak kartı başka adrese götürmez
+  const csp = `default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><base target="_blank"><style>${vars}${PAGE_CSS}</style></head><body>${html}</body></html>`;
+}
+
+function fitPage(frame) {
+  try {
+    const doc = frame.contentDocument?.documentElement;
+    if (!doc || !frame.offsetWidth) return; // gizli sekme: açılınca ölçülür
+    frame.style.height = "0";
+    frame.style.height = `${doc.scrollHeight + 2}px`;
+    wirePage(frame); // tıklama alanları yerleşime göre konur
+  } catch {}
+}
+addEventListener("resize", () => document.querySelectorAll(".feed.active iframe").forEach(fitPage));
+
+/**
+ * Sayfadaki fotoğraf ve şemalar tıklayınca büyür. Çerçevede kod çalışmadığı için (WebKit dışarıdan takılan
+ * dinleyiciyi de çalıştırmaz) her birinin üstüne tahtadan saydam bir tıklama alanı konur.
+ */
+function wirePage(frame) {
+  const box = frame.parentElement;
+  box.querySelectorAll(".zhit").forEach((b) => b.remove());
+  frame.contentDocument?.querySelectorAll("img, svg:not(svg svg)").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const hit = document.createElement("button");
+    hit.className = "zhit";
+    hit.title = "Büyütmek için tıkla";
+    hit.dataset.kind = el.tagName.toLowerCase();
+    Object.assign(hit.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    hit.onclick = () => zoom(document.importNode(el, true));
+    box.appendChild(hit);
+  });
+}
+
+/** Sayfadaki <pre class="mermaid"> şemalarını çizer; çizilemeyen kaynak olarak kalır. */
+async function withDiagrams(html, id) {
+  const parts = [...html.matchAll(/<pre\s+class=["']mermaid["']\s*>([\s\S]*?)<\/pre>/gi)];
+  if (!parts.length) return html;
+  const decode = (s) => { const t = document.createElement("textarea"); t.innerHTML = s; return t.value; };
+  let out = html;
+  for (const [i, m] of parts.entries()) {
+    try {
+      const { svg } = await (await getMermaid()).render(`p${String(id).replace(/\W/g, "")}${i}`, decode(m[1]));
+      out = out.replace(m[0], () => svg);
+    } catch {}
+  }
+  return out;
+}
+
+/** Dosyayı VS Code'da açan adres; satır varsa o satıra gider. */
+function fileUrl(root, path, line) {
+  const abs = path.startsWith("/") ? path : `${root}/${path}`;
+  return `vscode://file${encodeURI(abs).replace(/[#?]/g, encodeURIComponent)}${line ? `:${line}` : ""}`;
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return; } catch {}
+  const t = document.createElement("textarea");
+  t.value = text;
+  document.body.appendChild(t);
+  t.select();
+  document.execCommand("copy");
+  t.remove();
+}
+
+/** Tam ekran görünüm. Görsele tıklamak daha da büyütür (kaydırılabilir), dışarı tıklamak ya da Esc kapatır. */
+function zoom(el) {
+  const z = document.createElement("div");
+  z.className = "zoom";
+  z.innerHTML = `<button class="zclose ibtn" title="Kapat  (Esc)">${ICON.close}</button>`;
+  z.appendChild(el);
+  // Görsel pencereye sığacak kadar büyür; çevresi boş kalır, oraya tıklamak kapatır
+  const fit = () => {
+    const k = Math.min((innerWidth - 48) / el.naturalWidth, (innerHeight - 48) / el.naturalHeight);
+    el.style.width = `${Math.round(el.naturalWidth * k)}px`;
+    el.style.height = `${Math.round(el.naturalHeight * k)}px`;
+  };
+  if (el.tagName === "IMG") { if (el.complete && el.naturalWidth) fit(); else el.onload = fit; }
+  z.onclick = (e) => {
+    if (e.target !== el || el.tagName !== "IMG") return z.remove();
+    if (z.classList.toggle("actual")) {
+      el.style.width = `${Math.round(Math.max(el.naturalWidth, innerWidth * 1.8))}px`;
+      el.style.height = "auto";
+    } else fit();
+  };
+  document.body.appendChild(z);
+  z.querySelector(".zclose").focus(); // tıklama çerçevedeyse odak orada kalır, Esc tahtaya ulaşmaz
+}
+
+const DELIVERY = {
+  queued: "Tahtadan · sırada, ilk fırsatta Claude'a iletilecek",
+  sent: "Tahtadan · Claude'a iletildi",
+  failed: "Tahtadan · Claude'a ulaşılamadı",
+};
+const NEED_CLOSED = {
+  elsewhere: "VS Code'dan cevaplandı",
+  timeout: "Süre doldu, VS Code'dan cevaplayabilirsin",
+  noboard: "Tahta kapalıydı, cevap VS Code'dan verilir",
+  restart: "Lazypad yeniden başladı, cevabı VS Code'dan ver",
+};
+
+/** Kart içi yazı kutusu: Enter ya da düğme gönderir. */
+function wireTyped(card, onSend) {
+  card.querySelectorAll(".typed").forEach((box) => {
+    const input = box.querySelector("input"), button = box.querySelector("button");
+    const go = () => { const v = input.value.trim(); if (v) onSend(v, input); };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); go(); } });
+    if (button) button.onclick = go;
+  });
+}
+
+function needHTML(ev) {
+  const elsewhere = `<div class="hint2">VS Code'daki kutudan da cevaplayabilirsin, hangisi önce gelirse o geçerli.</div>`;
+  if (ev.kind === "permission") {
+    return `<div class="lbl">İzin istiyor · ${esc(ev.tool)}</div><div class="q">${esc(ev.title)}</div>
+      ${ev.detail ? `<pre class="code" style="margin-top:8px">${esc(ev.detail)}</pre>` : ""}
+      <div class="opts perm"><button class="allow">İzin ver</button><button class="deny">Reddet</button></div>
+      <div class="typed"><input placeholder="Reddetme nedenin (isteğe bağlı)" aria-label="Reddetme nedeni"></div>
+      <div class="note"></div>${elsewhere}`;
+  }
+  if (ev.kind === "question") {
+    const qs = ev.questions || [];
+    const auto = qs.length === 1 && !qs[0].multiSelect;
+    return qs.map((q, i) => `<div class="qq" data-i="${i}">
+        ${q.header ? `<div class="lbl">${esc(q.header)}</div>` : ""}<div class="q">${esc(q.question)}</div>
+        <div class="optlist">${(q.options || []).map((o, j) => `<button class="optb" data-j="${j}" title="Kısayol: ${j + 1}"><b>${esc(o.label)}</b>${o.description ? `<span>${esc(o.description)}</span>` : ""}</button>`).join("")}</div>
+        <div class="typed"><input placeholder="Başka bir cevap yaz…" aria-label="Başka cevap">${auto ? "<button>Gönder</button>" : ""}</div>
+      </div>`).join("") + (auto ? "" : `<button class="sendq">Cevapları gönder</button>`) + `<div class="note"></div>${elsewhere}`;
+  }
+  return `<div class="lbl">Plan onayını bekliyor</div><div class="md">${renderBlocks(ev.blocks || [])}</div>
+    <div class="typed"><input placeholder="Düzeltme iste…" aria-label="Düzeltme"><button>Gönder</button></div>
+    <div class="note"></div><div class="hint2">Planı onaylamak için VS Code'daki kutuyu kullan.</div>`;
+}
+
+function wireNeed(d, ev) {
+  if (ev.kind === "permission") {
+    const reason = d.querySelector(".typed input");
+    d.querySelector(".allow").onclick = () => send({ type: "decide", id: ev.id, allow: true });
+    d.querySelector(".deny").onclick = () => send({ type: "decide", id: ev.id, allow: false, message: reason.value });
+    reason.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) send({ type: "decide", id: ev.id, allow: false, message: reason.value }); });
+    return;
+  }
+  if (ev.kind === "plan") return wireTyped(d, (text) => send({ type: "decide", id: ev.id, message: text }));
+  const qs = ev.questions || [];
+  const auto = qs.length === 1 && !qs[0].multiSelect;
+  const collect = () => {
+    const answers = {};
+    d.querySelectorAll(".qq").forEach((box, i) => {
+      const typed = box.querySelector(".typed input").value.trim();
+      const picked = [...box.querySelectorAll(".optb.sel")].map((b) => qs[i].options[+b.dataset.j].label);
+      const answer = typed || picked.join(", ");
+      if (answer) answers[qs[i].question] = answer;
+    });
+    return answers;
+  };
+  const submit = () => {
+    const answers = collect();
+    if (Object.keys(answers).length === qs.length) send({ type: "decide", id: ev.id, answers });
+  };
+  d.querySelectorAll(".qq").forEach((box, i) => {
+    box.querySelectorAll(".optb").forEach((b) => {
+      b.onclick = () => {
+        if (!qs[i].multiSelect) box.querySelectorAll(".optb").forEach((x) => { if (x !== b) x.classList.remove("sel"); });
+        b.classList.toggle("sel", qs[i].multiSelect ? undefined : true);
+        if (auto) submit();
+      };
+    });
+  });
+  wireTyped(d, submit);
+  d.querySelector(".sendq")?.addEventListener("click", submit);
+}
+
+function renderShow(ev, tab) {
   const d = ev.data || {};
   switch (ev.kind) {
+    case "code": return `${d.path ? `<div class="srcpath">${esc(d.path)}</div>` : ""}<pre class="code">${esc(d.code)}</pre><button class="link copy">Kopyala</button>`;
+    case "diff": return `${d.path ? `<div class="srcpath">${esc(d.path)}</div>` : ""}<div class="diff">${String(d.diff ?? "").split("\n").map((l) => {
+      const cls = l.startsWith("@@") ? "hunk" : l.startsWith("+") ? "add" : l.startsWith("-") ? "del" : "";
+      return `<div class="${cls}">${esc(l) || " "}</div>`;
+    }).join("")}</div>`;
+    case "image": return d.src
+      ? `<img class="shot" src="${esc(d.src)}" alt="${esc(d.caption || ev.title)}">${d.caption ? `<div class="caption">${esc(d.caption)}</div>` : ""}`
+      : `<div class="caption">Görsel yalnızca oturum sırasında saklanır${d.caption ? `: ${esc(d.caption)}` : ""}.</div>`;
+    case "files": return (d.items || []).map((f) => `<a class="file" href="${esc(fileUrl(tab.key, f.path, f.line))}" title="VS Code'da aç"><code>${esc(f.path)}${f.line ? `:${f.line}` : ""}</code>${f.note ? `<span>${esc(f.note)}</span>` : ""}</a>`).join("");
     case "table": return tableHTML(d.columns || [], d.rows || []);
     case "compare": return `<div class="cmp">${[d.left, d.right].map((c) => `<div class="col"><h4>${esc(c?.label)}</h4><ul>${(c?.items || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}</div>`;
     case "points": return `<div class="pts">${(d.items || []).map((p, i) => `<div class="pt"><div class="n">${String(i + 1).padStart(2, "0")}</div><b>${esc(p.title)}</b>${p.text ? `<span>${esc(p.text)}</span>` : ""}</div>`).join("")}</div>`;
@@ -748,37 +1290,54 @@ function renderShow(ev) {
 }
 
 // Sade SVG grafik: ince işaretler, tek eksen, sönük ızgara, hover ipucu, tablo görünümü
-function niceScale(max) {
-  if (max <= 0) return { top: 1, step: 0.25 };
-  const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw));
+function niceScale(lo, hi) {
+  if (lo === hi) return { bottom: 0, top: 1, step: 0.25 };
+  const raw = (hi - lo) / 4, mag = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw);
-  return { top: step * Math.ceil(max / step), step };
+  return { bottom: step * Math.floor(lo / step), top: step * Math.ceil(hi / step), step };
+}
+/** Eksen etiketi sığdığı kadar uzun kalır, gerekirse iki satıra bölünür. */
+function wrapLabel(s, max) {
+  if (s.length <= max) return [s];
+  const lines = [""];
+  for (const w of s.split(" ")) {
+    const cur = lines[lines.length - 1];
+    if (!cur) lines[lines.length - 1] = w;
+    else if (cur.length + 1 + w.length <= max) lines[lines.length - 1] = `${cur} ${w}`;
+    else lines.push(w);
+  }
+  const cut = (x) => (x.length > max ? x.slice(0, max - 1) + "…" : x);
+  return lines.length === 1 ? [cut(lines[0])] : [cut(lines[0]), cut(lines.slice(1).join(" "))];
 }
 function chartHTML(d) {
-  const W = 600, H = 230, L = 46, R = d.chart === "line" && d.series.length > 1 ? 70 : 12, T = 10, B = 28;
-  const pw = W - L - R, ph = H - T - B, n = d.labels.length, k = d.series.length;
+  const W = 600, H = 230, L = 46, R = d.chart === "line" && d.series.length > 1 ? 70 : 12, T = 10;
+  const pw = W - L - R, n = d.labels.length, k = d.series.length, band = pw / n, every = Math.ceil(n / 8);
+  const labelLines = d.labels.map((lb) => wrapLabel(lb, Math.max(4, Math.floor((band * every) / 6.2))));
+  const B = labelLines.some((l) => l.length > 1) ? 42 : 28, ph = H - T - B;
   const all = d.series.flatMap((s) => s.values).filter(Number.isFinite);
-  const { top, step } = niceScale(Math.max(0, ...all));
-  const y = (v) => T + ph - (Math.max(0, v) / top) * ph;
-  const band = pw / n, cx = (i) => L + band * i + band / 2;
+  const { bottom, top, step } = niceScale(Math.min(0, ...all), Math.max(0, ...all));
+  const y = (v) => T + ph - ((v - bottom) / (top - bottom)) * ph;
+  const cx = (i) => L + band * i + band / 2;
   const col = (j) => `var(--s${j + 1})`;
   const u = d.unit ? " " + d.unit : "";
   let g = "";
-  for (let v = 0; v <= top + 1e-9; v += step) {
+  const ticks = Math.round((top - bottom) / step);
+  for (let i = 0; i <= ticks; i++) {
+    const v = +(bottom + i * step).toFixed(6);
     g += `<line class="${v === 0 ? "base" : "grid"}" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
-    g += `<text class="ax" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${fmtNum(+v.toFixed(6))}</text>`;
+    g += `<text class="ax" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${fmtNum(v)}</text>`;
   }
-  const every = Math.ceil(n / 8);
-  d.labels.forEach((lb, i) => {
-    if (i % every === 0) g += `<text class="ax" x="${cx(i)}" y="${H - 8}" text-anchor="middle">${esc(lb.length > 12 ? lb.slice(0, 11) + "…" : lb)}</text>`;
+  labelLines.forEach((lines, i) => {
+    if (i % every === 0) g += `<text class="ax" text-anchor="middle">${lines.map((l, j) => `<tspan x="${cx(i)}" y="${T + ph + 18 + j * 13}">${esc(l)}</tspan>`).join("")}</text>`;
   });
   let marks = "";
   if (d.chart === "bar") {
     const gap = 2, bw = Math.min(28, (band * 0.72 - gap * (k - 1)) / k);
     d.series.forEach((s, j) => s.values.forEach((v, i) => {
-      if (!Number.isFinite(v) || v <= 0) return;
-      const x = cx(i) - (bw * k + gap * (k - 1)) / 2 + j * (bw + gap), yt = y(v), yb = y(0), r = Math.min(4, bw / 2, yb - yt);
-      marks += `<path fill="${col(j)}" d="M${x},${yb} V${yt + r} Q${x},${yt} ${x + r},${yt} H${x + bw - r} Q${x + bw},${yt} ${x + bw},${yt + r} V${yb} Z"/>`;
+      if (!Number.isFinite(v) || v === 0) return;
+      // Çubuk sıfır çizgisinden başlar, negatifse aşağı iner; yuvarlak köşe uç taraftadır
+      const x = cx(i) - (bw * k + gap * (k - 1)) / 2 + j * (bw + gap), yt = y(v), yb = y(0), r = Math.min(4, bw / 2, Math.abs(yb - yt)) * Math.sign(v);
+      marks += `<path fill="${col(j)}" d="M${x},${yb} V${yt + r} Q${x},${yt} ${x + Math.abs(r)},${yt} H${x + bw - Math.abs(r)} Q${x + bw},${yt} ${x + bw},${yt + r} V${yb} Z"/>`;
     }));
   } else {
     d.series.forEach((s, j) => {
@@ -821,11 +1380,21 @@ function wireChart(card, d) {
   });
 }
 
-function markAnswered(tab, id, choice) {
+function markAnswered(tab, id, ev) {
   const d = tab.cards.get(id);
   if (!d || d.classList.contains("answered")) return;
   d.classList.add("answered");
-  d.querySelectorAll(".opts button").forEach((b) => { if (b.textContent === choice) b.classList.add("chosen"); });
+  const picked = ev.choices || [ev.choice];
+  d.querySelectorAll(".opts button").forEach((b) => { if (picked.includes(b.textContent)) b.classList.add("chosen"); });
+  if (ev.typed) d.querySelector(".note").textContent = `Yazdın: ${ev.choice}`;
+}
+
+const ASK_CLOSED = { timeout: "Süre doldu, Claude bunu onay saymadı.", cancelled: "Claude bu sorudan vazgeçti.", session: "Oturum kapandı." };
+function closeAsk(tab, id, reason) {
+  const d = tab.cards.get(id);
+  if (!d || d.classList.contains("answered")) return;
+  d.classList.add("answered");
+  d.querySelector(".note").textContent = ASK_CLOSED[reason] || "Kapandı.";
 }
 
 // ---------------------------------------------------------------- açılır paneller
@@ -844,14 +1413,16 @@ document.addEventListener("keydown", (e) => {
   if (e.target.closest("select, input, textarea") || e.metaKey || e.ctrlKey) return;
   const t = tabs.get(active);
   if (e.key === "Escape") { const z = document.querySelector(".zoom"); if (z) return z.remove(); hush(); }
+  else if (e.key === "/") { e.preventDefault(); $("#composerText").focus(); }
   else if (e.key === "m" || e.key === "M") toggleMute();
   else if (e.key === " ") {
     e.preventDefault();
     const last = t && [...t.feed.querySelectorAll(".card[data-say]")].pop();
     if (last) { hush(); speak(last.dataset.say, last); }
-  } else if (/^[1-4]$/.test(e.key) && t) {
-    const open = [...t.feed.querySelectorAll(".ask:not(.answered)")].pop();
-    open?.querySelectorAll(".opts button")[Number(e.key) - 1]?.click();
+  } else if (/^[1-6]$/.test(e.key) && t) {
+    // İzin kartlarında kısayol yok: yanlışlıkla basılan tuş bir komuta izin vermesin
+    const open = [...t.feed.querySelectorAll(".ask:not(.answered):not(.permission):not(.plan)")].pop();
+    open?.querySelectorAll(".opts button, .optb")[Number(e.key) - 1]?.click();
   } else if ((e.key === "[" || e.key === "]") && tabs.size > 1) {
     const keys = [...tabs.keys()];
     const i = keys.indexOf(active) + (e.key === "]" ? 1 : -1);
@@ -859,20 +1430,42 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// ---------------------------------------------------------------- yazı kutusu
+const composer = $("#composerText");
+function fitComposer() {
+  composer.style.height = "auto";
+  composer.style.height = `${Math.min(composer.scrollHeight, 130)}px`;
+}
+function sendComposer() {
+  const text = composer.value.trim();
+  if (!text || !active || !send({ type: "reply", tab: active, text })) return;
+  composer.value = "";
+  fitComposer();
+}
+composer.addEventListener("input", fitComposer);
+composer.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendComposer(); }
+  else if (e.key === "Escape") composer.blur();
+});
+$("#composerSend").onclick = sendComposer;
+
 // ---------------------------------------------------------------- bağlantı
 let ws = null;
+function send(msg) {
+  if (ws?.readyState !== 1) return false;
+  ws.send(JSON.stringify(msg));
+  return true;
+}
 function connect() {
-  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
-  ws.onopen = () => orb.classList.remove("off");
+  let opened = false;
+  ws = new WebSocket(`ws://${location.host}/board?t=${encodeURIComponent(store.get("token", ""))}`);
+  ws.onopen = () => { opened = true; orb.classList.remove("off"); $("#authHint").hidden = true; };
   ws.onmessage = (m) => { try { handle(JSON.parse(m.data)); } catch (err) { console.error(err); } };
-  ws.onclose = () => {
+  ws.onclose = async () => {
     orb.classList.add("off");
-    // Yeniden bağlanınca geçmiş baştan gelir: mevcut sekmeleri temizle
-    setTimeout(() => {
-      for (const t of tabs.values()) { t.btn.remove(); t.feed.remove(); }
-      tabs.clear(); active = null;
-      connect();
-    }, 1500);
+    // Hiç bağlanamadık ama merkez ayakta: anahtar yok ya da geçersiz
+    if (!opened) { try { if ((await fetch("/health")).ok) $("#authHint").hidden = false; } catch {} }
+    setTimeout(connect, 1500); // kartlar yeni geçmiş gelene kadar görünür kalır
   };
 }
 connect();

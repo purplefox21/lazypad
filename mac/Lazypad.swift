@@ -8,7 +8,15 @@ import AVFoundation
 import Cocoa
 import WebKit
 
-let boardURL = URL(string: "http://127.0.0.1:" + (ProcessInfo.processInfo.environment["LAZYPAD_PORT"] ?? "4242") + "/?app=1")!
+let boardPort = ProcessInfo.processInfo.environment["LAZYPAD_PORT"] ?? "4242"
+
+// Erişim anahtarı adresin # kısmında verilir: sunucuya gitmez, tahta okuyup adresten siler
+func boardURL() -> URL {
+    let file = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".lazypad/token")
+    let token = (try? String(contentsOf: file, encoding: .utf8))?
+        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return URL(string: "http://127.0.0.1:\(boardPort)/#t=\(token)")!
+}
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate,
     AVSpeechSynthesizerDelegate, NSWindowDelegate
@@ -31,7 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         let cfg = WKWebViewConfiguration()
         cfg.userContentController.add(self, name: "lazypad")
         cfg.userContentController.addUserScript(WKUserScript(
-            source: "window.__lpNative = true; window.__lpVoices = \(voicesJSON);",
+            source: "window.__lpVoices = \(voicesJSON);",
             injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         // Gerçek cam (arkası bulanık) zemin
@@ -70,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         load()
     }
 
-    func load() { web.load(URLRequest(url: boardURL)) }
+    func load() { web.load(URLRequest(url: boardURL())) }
 
     // Merkez henüz çalışmıyorsa bekle ve tekrar dene
     func webView(_ w: WKWebView, didFailProvisionalNavigation n: WKNavigation!, withError e: Error) {
@@ -81,6 +89,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             """
         w.loadHTMLString(html, baseURL: nil)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.load() }
+    }
+
+    // "VS Code'da aç" bağlantıları: pencerenin içinde değil VS Code'da açılır
+    func webView(
+        _ w: WKWebView, decidePolicyFor action: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        if let url = action.request.url, url.scheme == "vscode" {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
+        }
+        decisionHandler(.allow)
     }
 
     // Sayfadan gelen komutlar
@@ -136,13 +157,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
         let editItem = NSMenuItem(); main.addItem(editItem)
         let edit = NSMenu(title: "Düzen")
+        edit.addItem(withTitle: "Geri Al", action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: "Kes", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
         edit.addItem(withTitle: "Kopyala", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         edit.addItem(withTitle: "Yapıştır", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         edit.addItem(withTitle: "Tümünü Seç", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = edit
         NSApp.mainMenu = main
     }
-    @objc func reload() { load() }
+    @objc func reload() { web.reload() }
 }
 
 let app = NSApplication.shared

@@ -10,15 +10,20 @@
     "start": "node src/index.js",
     "setup": "node src/index.js setup",
     "app": "node src/index.js app",
-    "uninstall": "node src/index.js uninstall"
+    "uninstall": "node src/index.js uninstall",
+    "test": "node --test test/logic.test.js test/hub.test.js test/mcp.test.js test/setup.test.js test/board-link.test.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "ws": "^8.18.0",
-    "zod": "^3.24.0"
+    "zod": "^4.6.7"
   },
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/purplefox21/lazypad.git"
+  }
 }
