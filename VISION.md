@@ -1,4 +1,4 @@
-# CodeEasy: kodlamanın sesli ve görsel kokpiti
+# Lazypad: kodlamanın sesli ve görsel kokpiti
 
 > Claude çalışır, **tahtaya çizer, sesli anlatır.** Sen konuşursun ya da tek tuşla karar verirsin.
 > Okuma yok, uzun metin yok, karar yorgunluğu yok.
@@ -15,8 +15,8 @@
         │
         ▼
  ┌─────────────────────┐      ┌────────────────────────────┐
- │  CodeEasy Beyni     │◄────►│  Claude Code (Agent SDK)   │
- │  (yerel sunucu)     │      │  + codeeasy MCP araçları:  │
+ │  Lazypad Beyni      │◄────►│  Claude Code (Agent SDK)   │
+ │  (yerel sunucu)     │      │  + lazypad MCP araçları:   │
  │  STT · TTS · olay   │      │  draw() say() ask() step() │
  └─────────┬───────────┘      └────────────────────────────┘
            │ WebSocket
@@ -42,7 +42,7 @@
 - **"Bana anlat" modu:** Bir dosyayı ya da akışı seçersin, Claude onu tahtada öğretmen gibi çizerek anlatır.
 
 ## Form: MCP sunucusu
-Ürün bir **MCP sunucusu** olarak yaşar: `claude mcp add codeeasy` ile Claude Code'a bağlanır (VS Code içinde de terminalde de aynı). Tahta, sunucunun açtığı yerel bir web sayfasıdır; VS Code eklentisi sonradan sadece bu sayfayı yan panelde gösteren ince bir kabuk olur.
+Ürün bir **MCP sunucusu** olarak yaşar: `claude mcp add lazypad` ile Claude Code'a bağlanır (VS Code içinde de terminalde de aynı). Tahta, sunucunun açtığı yerel bir web sayfasıdır; VS Code eklentisi sonradan sadece bu sayfayı yan panelde gösteren ince bir kabuk olur.
 
 ## Durum (v0.3)
 Bitenler: MCP araçları, otomatik takip (hook'lar), çok projeli sekmeli tahta, Mac uygulaması

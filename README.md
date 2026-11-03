@@ -1,4 +1,4 @@
-# CodeEasy
+# Lazypad
 
 **Claude Code için sesli ve görsel tahta.** Claude çalışırken sen uzun metin okumazsın:
 ne yaptığını tahtada görürsün, önemli şeyleri sesli duyarsın, kararları tek tıkla verirsin.
@@ -6,15 +6,15 @@ ne yaptığını tahtada görürsün, önemli şeyleri sesli duyarsın, kararlar
 ## Kurulum
 
 ```bash
-git clone https://github.com/purplefox21/codeeasy && cd codeeasy
+git clone https://github.com/purplefox21/lazypad && cd lazypad
 npm install
 npm run setup
 ```
 
 `setup` üç şey yapar:
-1. CodeEasy'yi Claude Code'a MCP olarak ekler (terminal ve VS Code, ikisinde de çalışır)
+1. Lazypad'yi Claude Code'a MCP olarak ekler (terminal ve VS Code, ikisinde de çalışır)
 2. Otomatik takip için hook'ları `~/.claude/settings.json`'a ekler (önce yedek alır)
-3. macOS'ta Swift varsa **CodeEasy.app**'i derleyip `~/Applications`'a koyar
+3. macOS'ta Swift varsa **Lazypad.app**'i derleyip `~/Applications`'a koyar
 
 Sonra Claude Code'u yeniden başlat. Tahta kendiliğinden açılır.
 Geri almak için: `npm run uninstall`.

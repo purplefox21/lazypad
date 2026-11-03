@@ -40,8 +40,8 @@ function send(msg) {
 const ok = (text) => ({ content: [{ type: "text", text }] });
 
 // ---------------------------------------------------------------- araçlar
-const INSTRUCTIONS = `CodeEasy is the user's voice + visual board. The user does NOT want to read long text: explain with visuals, not paragraphs.
-Hooks already show prompts, changed files and your final message on the board automatically. Each prompt also carries a [CodeEasy] explanation mode (VISUAL / BALANCED / TEXT); follow it.
+const INSTRUCTIONS = `Lazypad is the user's voice + visual board. The user does NOT want to read long text: explain with visuals, not paragraphs.
+Hooks already show prompts, changed files and your final message on the board automatically. Each prompt also carries a [Lazypad] explanation mode (VISUAL / BALANCED / TEXT); follow it.
 Choose the form by the content:
 - flow, architecture, call order, cause→effect, states → \`draw\` (Mermaid: flowchart, sequenceDiagram, mindmap, stateDiagram), 3-10 nodes
 - options, comparisons, before/after → \`show\` kind "table" or "compare"
@@ -54,11 +54,11 @@ Other tools:
 - Never use emojis in board content.
 - Keep the final chat reply short: the first 1-2 sentences are read aloud as the summary, so start with the outcome.`;
 
-const mcp = new McpServer({ name: "codeeasy", version: "0.3.0" }, { instructions: INSTRUCTIONS });
+const mcp = new McpServer({ name: "lazypad", version: "0.3.0" }, { instructions: INSTRUCTIONS });
 
 mcp.tool(
   "say",
-  "Speak a SHORT message (max 2 sentences) aloud on the CodeEasy board. level 'warn' only for things the user must know. User's language, no emojis.",
+  "Speak a SHORT message (max 2 sentences) aloud on the Lazypad board. level 'warn' only for things the user must know. User's language, no emojis.",
   {
     text: z.string().max(400).describe("Short spoken message, max 2 sentences"),
     level: z.enum(["ok", "warn"]).default("ok"),
@@ -68,7 +68,7 @@ mcp.tool(
 
 mcp.tool(
   "draw",
-  "Draw a small Mermaid diagram on the CodeEasy board instead of a long text explanation (flows, architecture, cause→effect). 3-10 nodes, labels in the user's language, no emojis.",
+  "Draw a small Mermaid diagram on the Lazypad board instead of a long text explanation (flows, architecture, cause→effect). 3-10 nodes, labels in the user's language, no emojis.",
   {
     title: z.string().max(80),
     mermaid: z.string().max(4000).describe("Mermaid source, e.g. 'graph LR; A[Giriş]-->B[Token]'"),
@@ -105,7 +105,7 @@ const Show = z.discriminatedUnion("kind", [
 
 mcp.tool(
   "show",
-  "Show structured content on the CodeEasy board instead of writing it as text. " +
+  "Show structured content on the Lazypad board instead of writing it as text. " +
     "kind 'table' (columns + rows) for options/comparisons; 'chart' (bar|line, labels, 1-4 series, unit) for numbers; " +
     "'compare' (left/right lists, e.g. before/after or option A/B); 'points' (2-8 short takeaways). " +
     "User's language, short cells, no emojis.",
@@ -125,7 +125,7 @@ mcp.tool(
 
 mcp.tool(
   "step",
-  "Update the progress checklist on the CodeEasy board for multi-step tasks (doing when starting, done/fail when finished).",
+  "Update the progress checklist on the Lazypad board for multi-step tasks (doing when starting, done/fail when finished).",
   {
     label: z.string().max(120),
     status: z.enum(["doing", "done", "fail"]),
@@ -135,7 +135,7 @@ mcp.tool(
 
 mcp.tool(
   "ask",
-  "Ask the user a decision on the CodeEasy board (card + voice). ONLY for hard-to-reverse decisions or ones that are truly the user's call. Blocks until answered (max 10 min). Recommended option first.",
+  "Ask the user a decision on the Lazypad board (card + voice). ONLY for hard-to-reverse decisions or ones that are truly the user's call. Blocks until answered (max 10 min). Recommended option first.",
   {
     question: z.string().max(300),
     options: z.array(z.string().max(80)).min(2).max(4),

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CodeEasy</title>
+<title>Lazypad</title>
 <style>
   :root {
     --bg: #0b0c12;
@@ -356,7 +356,7 @@
 
 <script type="module">
 const $ = (s) => document.querySelector(s);
-const NATIVE = window.webkit?.messageHandlers?.codeeasy;
+const NATIVE = window.webkit?.messageHandlers?.lazypad;
 if (NATIVE) document.documentElement.classList.add("native");
 
 // ---------------------------------------------------------------- ikonlar
@@ -373,8 +373,8 @@ for (const el of document.querySelectorAll("[data-icon]")) el.innerHTML = ICON[e
 
 // ---------------------------------------------------------------- ayarlar (tarayıcıda hatırlanır)
 const store = {
-  get(k, d) { try { return localStorage.getItem("ce." + k) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem("ce." + k, v); } catch {} },
+  get(k, d) { try { return localStorage.getItem("lp." + k) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("lp." + k, v); } catch {} },
 };
 let talk = store.get("talk", "important");
 for (const b of document.querySelectorAll("#talkSeg button")) {
@@ -424,7 +424,7 @@ const pendingUnlock = [];
 
 function loadVoices() {
   let list = [];
-  if (NATIVE) list = (window.__ceVoices || []).map((v) => ({ id: v.id, name: v.name, lang: v.lang }));
+  if (NATIVE) list = (window.__lpVoices || []).map((v) => ({ id: v.id, name: v.name, lang: v.lang }));
   else { try { list = speechSynthesis.getVoices().map((v) => ({ id: v.name, name: v.name, lang: v.lang })); } catch {} }
   if (!list.length) return;
   list.sort((a, b) => (b.lang.startsWith("tr") - a.lang.startsWith("tr")) || a.name.localeCompare(b.name));
@@ -447,7 +447,7 @@ function setPlaying(id, on, anySpeaking) {
   if (!on) speakEls.delete(id);
   orb.classList.toggle("speaking", anySpeaking);
 }
-window.__ceSpeech = (on, id, any) => setPlaying(id, on, any);
+window.__lpSpeech = (on, id, any) => setPlaying(id, on, any);
 
 function speak(text, el) {
   if (muted || !text) return;

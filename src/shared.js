@@ -7,12 +7,12 @@ import { fileURLToPath } from "node:url";
 
 export const ENTRY = join(dirname(fileURLToPath(import.meta.url)), "index.js");
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-export const PORT = Number(process.env.CODEEASY_PORT || 4242);
+export const PORT = Number(process.env.LAZYPAD_PORT || 4242);
 export const HOST = "127.0.0.1";
 export const BASE = `http://${HOST}:${PORT}`;
-export const CONFIG_DIR = join(homedir(), ".codeeasy");
+export const CONFIG_DIR = join(homedir(), ".lazypad");
 export const CONFIG_FILE = join(CONFIG_DIR, "config.json");
-export const APP_PATHS = ["/Applications/CodeEasy.app", join(homedir(), "Applications", "CodeEasy.app")];
+export const APP_PATHS = ["/Applications/Lazypad.app", join(homedir(), "Applications", "Lazypad.app")];
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -29,7 +29,7 @@ export function writeConfig(patch) {
 export async function hubAlive() {
   try {
     const r = await fetch(`${BASE}/health`, { signal: AbortSignal.timeout(500) });
-    return (await r.json()).codeeasy === true;
+    return (await r.json()).lazypad === true;
   } catch { return false; }
 }
 

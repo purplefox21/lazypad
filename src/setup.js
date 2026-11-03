@@ -13,22 +13,25 @@ const HOOK_EVENTS = {
   Notification: null,
   Stop: null,
 };
-const isOurs = (h) => typeof h?.command === "string" && h.command.includes(ENTRY) && h.command.endsWith(" hook");
+// Bizim hook'umuz: bu kurulum ya da eski adla (codeeasy) yapılmış kurulumlar
+const isOurs = (h) => typeof h?.command === "string" && h.command.endsWith(" hook") &&
+  (h.command.includes(ENTRY) || /(codeeasy|lazypad)[^"]*src[\\/]index\.js"? hook$/i.test(h.command));
 
 const say = (s) => console.log(s);
 const run = (cmd, args) => spawnSync(cmd, args, { stdio: "pipe", encoding: "utf8", shell: process.platform === "win32" });
 
 // ---------------------------------------------------------------- MCP kaydı
 function registerMcp() {
-  run("claude", ["mcp", "remove", "--scope", "user", "codeeasy"]);
-  const r = run("claude", ["mcp", "add", "--scope", "user", "codeeasy", "--", process.execPath, ENTRY]);
+  run("claude", ["mcp", "remove", "--scope", "user", "codeeasy"]); // eski ad
+  run("claude", ["mcp", "remove", "--scope", "user", "lazypad"]);
+  const r = run("claude", ["mcp", "add", "--scope", "user", "lazypad", "--", process.execPath, ENTRY]);
   if (r.error) { say("  ✗ `claude` komutu bulunamadı. Claude Code kurulu mu?"); return false; }
   if (r.status !== 0) { say("  ✗ MCP eklenemedi:\n" + (r.stderr || r.stdout)); return false; }
   say("  ✓ Claude Code'a MCP olarak eklendi");
   return true;
 }
 function unregisterMcp() {
-  const r = run("claude", ["mcp", "remove", "--scope", "user", "codeeasy"]);
+  const r = run("claude", ["mcp", "remove", "--scope", "user", "lazypad"]);
   say(r.status === 0 ? "  ✓ MCP kaldırıldı" : "  · MCP zaten kayıtlı değildi");
 }
 
@@ -41,7 +44,7 @@ function loadSettings() {
 }
 function saveSettings(s) {
   mkdirSync(join(homedir(), ".claude"), { recursive: true });
-  if (existsSync(SETTINGS)) copyFileSync(SETTINGS, SETTINGS + ".codeeasy-backup");
+  if (existsSync(SETTINGS)) copyFileSync(SETTINGS, SETTINGS + ".lazypad-backup");
   writeFileSync(SETTINGS, JSON.stringify(s, null, 2) + "\n");
 }
 function stripOurs(s) {
@@ -80,15 +83,15 @@ export function buildApp() {
     say("  · Swift bulunamadı, tarayıcı modu kullanılacak. Uygulama için: xcode-select --install, sonra npm run app");
     return false;
   }
-  const work = join(tmpdir(), "codeeasy-app-" + process.pid);
-  const app = join(work, "CodeEasy.app");
+  const work = join(tmpdir(), "lazypad-app-" + process.pid);
+  const app = join(work, "Lazypad.app");
   mkdirSync(join(app, "Contents", "MacOS"), { recursive: true });
   mkdirSync(join(app, "Contents", "Resources"), { recursive: true });
   copyFileSync(join(ROOT, "mac", "Info.plist"), join(app, "Contents", "Info.plist"));
   say("  … Mac uygulaması derleniyor (bir dakika sürebilir)");
   const b = run("xcrun", [
-    "swiftc", "-O", join(ROOT, "mac", "CodeEasy.swift"),
-    "-o", join(app, "Contents", "MacOS", "CodeEasy"),
+    "swiftc", "-O", join(ROOT, "mac", "Lazypad.swift"),
+    "-o", join(app, "Contents", "MacOS", "Lazypad"),
     "-framework", "Cocoa", "-framework", "WebKit", "-framework", "AVFoundation",
   ]);
   if (b.status !== 0) { say("  ✗ Derleme olmadı:\n" + b.stderr); return false; }
@@ -98,23 +101,23 @@ export function buildApp() {
   rmSync(dest, { recursive: true, force: true });
   renameSync(app, dest);
   rmSync(work, { recursive: true, force: true });
-  say("  ✓ CodeEasy.app kuruldu → " + dest);
+  say("  ✓ Lazypad.app kuruldu → " + dest);
   return true;
 }
 
 // ---------------------------------------------------------------- komutlar
 export function setup() {
-  say("\nCodeEasy kuruluyor\n");
+  say("\nLazypad kuruluyor\n");
   const okMcp = registerMcp();
   try { installHooks(); } catch (e) { say("  ✗ " + e.message); }
   buildApp();
   say(okMcp
     ? "\nHazır. Claude Code'u yeniden başlat, tahta kendiliğinden açılacak.\n"
-    : "\nMCP elle eklenmeli:\n  claude mcp add --scope user codeeasy -- \"" + process.execPath + "\" \"" + ENTRY + "\"\n");
+    : "\nMCP elle eklenmeli:\n  claude mcp add --scope user lazypad -- \"" + process.execPath + "\" \"" + ENTRY + "\"\n");
 }
 
 export function uninstall() {
-  say("\nCodeEasy kaldırılıyor\n");
+  say("\nLazypad kaldırılıyor\n");
   unregisterMcp();
   try { removeHooks(); } catch (e) { say("  ✗ " + e.message); }
   for (const p of APP_PATHS) if (existsSync(p) && p.startsWith(homedir())) { rmSync(p, { recursive: true, force: true }); say("  ✓ Uygulama silindi"); }

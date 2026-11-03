@@ -1,14 +1,14 @@
-// CodeEasy — macOS uygulaması
+// Lazypad — macOS uygulaması
 // Tahtayı (http://127.0.0.1:4242) gerçek macOS cam efektli bir pencerede gösterir
 // ve konuşmayı Apple'ın yerel ses motoruyla (AVSpeechSynthesizer) yapar.
 //
-// Derleme: npm run app   (veya: xcrun swiftc -O CodeEasy.swift -framework Cocoa -framework WebKit -framework AVFoundation)
+// Derleme: npm run app   (veya: xcrun swiftc -O Lazypad.swift -framework Cocoa -framework WebKit -framework AVFoundation)
 
 import AVFoundation
 import Cocoa
 import WebKit
 
-let boardURL = URL(string: "http://127.0.0.1:" + (ProcessInfo.processInfo.environment["CODEEASY_PORT"] ?? "4242") + "/?app=1")!
+let boardURL = URL(string: "http://127.0.0.1:" + (ProcessInfo.processInfo.environment["LAZYPAD_PORT"] ?? "4242") + "/?app=1")!
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate,
     AVSpeechSynthesizerDelegate, NSWindowDelegate
@@ -29,9 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
 
         let cfg = WKWebViewConfiguration()
-        cfg.userContentController.add(self, name: "codeeasy")
+        cfg.userContentController.add(self, name: "lazypad")
         cfg.userContentController.addUserScript(WKUserScript(
-            source: "window.__ceNative = true; window.__ceVoices = \(voicesJSON);",
+            source: "window.__lpNative = true; window.__lpVoices = \(voicesJSON);",
             injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
         // Gerçek cam (arkası bulanık) zemin
@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             contentRect: NSRect(x: 0, y: 0, width: 560, height: 820),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered, defer: false)
-        window.title = "CodeEasy"
+        window.title = "Lazypad"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isOpaque = false
@@ -60,8 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         web.navigationDelegate = self
         glass.addSubview(web)
 
-        if !window.setFrameUsingName("CodeEasyMain") { window.center() }
-        window.setFrameAutosaveName("CodeEasyMain")
+        if !window.setFrameUsingName("LazypadMain") { window.center() }
+        window.setFrameAutosaveName("LazypadMain")
         if UserDefaults.standard.bool(forKey: "pinned") { window.level = .floating }
 
         synth.delegate = self
@@ -115,7 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             let id = utteranceIds[key] ?? ""
             if !on { utteranceIds.removeValue(forKey: key) }
             let speaking = on || synth.isSpeaking
-            web.evaluateJavaScript("window.__ceSpeech && window.__ceSpeech(\(on), '\(id)', \(speaking))")
+            web.evaluateJavaScript("window.__lpSpeech && window.__lpSpeech(\(on), '\(id)', \(speaking))")
         }
     }
     func speechSynthesizer(_ s: AVSpeechSynthesizer, didStart u: AVSpeechUtterance) { report(true, u) }
@@ -131,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "Yenile", action: #selector(reload), keyEquivalent: "r")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "CodeEasy'den Çık", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Lazypad'den Çık", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
 
         let editItem = NSMenuItem(); main.addItem(editItem)

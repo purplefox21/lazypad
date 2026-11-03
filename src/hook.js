@@ -10,7 +10,7 @@ process.stdin.on("end", async () => {
     if (h.hook_event_name === "UserPromptSubmit") await ensureHub();
     const r = await fetch(`${BASE}/hook`, {
       method: "POST",
-      headers: { "content-type": "application/json", "x-codeeasy": "1" },
+      headers: { "content-type": "application/json", "x-lazypad": "1" },
       body: input,
       signal: AbortSignal.timeout(1500),
     });

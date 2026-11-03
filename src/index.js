@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * CodeEasy — Claude Code için sesli + görsel tahta.
+ * Lazypad — Claude Code için sesli + görsel tahta.
  *
- *   codeeasy                 MCP sunucusu (Claude Code bunu kendisi başlatır)
- *   codeeasy setup           Claude Code'a bağla + hook'lar + Mac uygulaması
- *   codeeasy uninstall       Hepsini geri al
- *   codeeasy app             Sadece Mac uygulamasını (yeniden) derle
- *   codeeasy open            Tahtayı şimdi aç
- *   codeeasy mode <m>        Tahta nerede açılsın: auto | app | browser | none
- *   codeeasy stop            Merkezi kapat
- *   codeeasy hub | hook      (iç kullanım)
+ *   lazypad                 MCP sunucusu (Claude Code bunu kendisi başlatır)
+ *   lazypad setup           Claude Code'a bağla + hook'lar + Mac uygulaması
+ *   lazypad uninstall       Hepsini geri al
+ *   lazypad app             Sadece Mac uygulamasını (yeniden) derle
+ *   lazypad open            Tahtayı şimdi aç
+ *   lazypad mode <m>        Tahta nerede açılsın: auto | app | browser | none
+ *   lazypad stop            Merkezi kapat
+ *   lazypad hub | hook      (iç kullanım)
  */
 import { spawn } from "node:child_process";
 import { BASE, ensureHub, writeConfig, findApp, readConfig } from "./shared.js";
@@ -37,7 +37,7 @@ switch (cmd) {
     break;
   case "mode": {
     if (!["auto", "app", "browser", "none"].includes(arg)) {
-      console.log(`Şu an: ${readConfig().open || "auto"}\nKullanım: codeeasy mode auto|app|browser|none`);
+      console.log(`Şu an: ${readConfig().open || "auto"}\nKullanım: lazypad mode auto|app|browser|none`);
       break;
     }
     writeConfig({ open: arg });
@@ -55,10 +55,10 @@ switch (cmd) {
   }
   case "stop":
     try {
-      await fetch(`${BASE}/shutdown`, { method: "POST", headers: { "x-codeeasy": "1" } });
+      await fetch(`${BASE}/shutdown`, { method: "POST", headers: { "x-lazypad": "1" } });
       console.log("Merkez kapatıldı");
     } catch { console.log("Merkez zaten kapalı"); }
     break;
   default:
-    console.log("Bilinmeyen komut. Kullanım için: npx codeeasy --help (src/index.js başı)");
+    console.log("Bilinmeyen komut. Kullanım için: src/index.js dosyasının başına bak");
 }

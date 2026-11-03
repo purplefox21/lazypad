@@ -2,10 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>CodeEasy</string>
-  <key>CFBundleDisplayName</key><string>CodeEasy</string>
-  <key>CFBundleIdentifier</key><string>dev.codeeasy.board</string>
-  <key>CFBundleExecutable</key><string>CodeEasy</string>
+  <key>CFBundleName</key><string>Lazypad</string>
+  <key>CFBundleDisplayName</key><string>Lazypad</string>
+  <key>CFBundleIdentifier</key><string>dev.lazypad.board</string>
+  <key>CFBundleExecutable</key><string>Lazypad</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleVersion</key><string>0.3.0</string>
   <key>CFBundleShortVersionString</key><string>0.3.0</string>

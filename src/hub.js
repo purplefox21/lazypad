@@ -10,7 +10,7 @@ import { ROOT, PORT, HOST, BASE, readConfig, writeConfig, findApp } from "./shar
 
 const BOARD_HTML = join(ROOT, "board", "index.html");
 const MAX_EVENTS = 3000;
-const IDLE_MS = Number(process.env.CODEEASY_IDLE_MS || 20 * 60 * 1000);
+const IDLE_MS = Number(process.env.LAZYPAD_IDLE_MS || 20 * 60 * 1000);
 
 const tabs = new Map();     // key(cwd) -> { key, name, state }
 const turns = new Map();    // key -> { activityId, files:Set, cmds, said, startedAt }
@@ -69,10 +69,10 @@ function emit(ev) {
 
 // ---------------------------------------------------------------- tahtayı aç
 function openBoard() {
-  if (process.env.CODEEASY_NO_OPEN) return;
+  if (process.env.LAZYPAD_NO_OPEN) return;
   if (boards.size > 0 || Date.now() - lastOpen < 30_000) return;
   lastOpen = Date.now();
-  const mode = process.env.CODEEASY_OPEN || readConfig().open || "auto";
+  const mode = process.env.LAZYPAD_OPEN || readConfig().open || "auto";
   if (mode === "none") return;
   const app = findApp();
   try {
@@ -86,7 +86,7 @@ function openBoard() {
 }
 
 function notifyMac(title, text) {
-  if (process.platform !== "darwin" || process.env.CODEEASY_NO_NOTIFY) return;
+  if (process.platform !== "darwin" || process.env.LAZYPAD_NO_NOTIFY) return;
   try {
     spawn("osascript", [
       "-e", "on run argv", "-e", "display notification (item 2 of argv) with title (item 1 of argv)",
@@ -104,13 +104,13 @@ const VISUAL_GUIDE =
   "key takeaways or a summary of many points -> `show` kind=points. One visual per idea, small and labeled in the user's language.";
 const MODE_CONTEXT = {
   visual:
-    "[CodeEasy] Explanation mode: VISUAL. The user is tired of reading; explain on the CodeEasy board instead of in text. " +
+    "[Lazypad] Explanation mode: VISUAL. The user is tired of reading; explain on the Lazypad board instead of in text. " +
     VISUAL_GUIDE + " In the chat reply write at most 3 short lines (outcome first); no long paragraphs, no markdown tables or bullet walls in chat.",
   balanced:
-    "[CodeEasy] Explanation mode: BALANCED. Put anything with structure (flows, comparisons, numbers) on the CodeEasy board. " +
+    "[Lazypad] Explanation mode: BALANCED. Put anything with structure (flows, comparisons, numbers) on the Lazypad board. " +
     VISUAL_GUIDE + " Keep the chat reply concise (about 8 lines max).",
   text:
-    "[CodeEasy] Explanation mode: TEXT. The user wants a written explanation; write it clearly in chat. Board visuals are optional.",
+    "[Lazypad] Explanation mode: TEXT. The user wants a written explanation; write it clearly in chat. Board visuals are optional.",
 };
 const WANTS_TEXT = /(yazıyla|metinle|metin olarak|yazarak|detaylı (yaz|anlat)|uzun uzun|açıklama yaz|in text|write it out)/i;
 const WANTS_VISUAL = /(çiz|şema|görsel(le)?|diyagram|grafik|tabloyla|tablo (yap|olarak)|draw|diagram|chart|visuali[sz]e)/i;
@@ -210,7 +210,7 @@ async function handleHook(h) {
       const text = trNotification(h.message);
       emit({ type: "attention", tab: tab.key, text });
       setState(tab, "waiting");
-      notifyMac(`CodeEasy · ${tab.name}`, text);
+      notifyMac(`Lazypad · ${tab.name}`, text);
       break;
     }
     case "Stop": {
@@ -236,10 +236,10 @@ const server = http.createServer((req, res) => {
   }
   if (req.method === "GET" && url.pathname === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
-    return res.end(JSON.stringify({ codeeasy: true, pid: process.pid, tabs: tabs.size, events: history.length }));
+    return res.end(JSON.stringify({ lazypad: true, pid: process.pid, tabs: tabs.size, events: history.length }));
   }
   // Yazma uçları özel başlık ister: tarayıcıdaki yabancı siteler bunu gönderemez.
-  if (req.method === "POST" && req.headers["x-codeeasy"] === "1") {
+  if (req.method === "POST" && req.headers["x-lazypad"] === "1") {
     if (url.pathname === "/shutdown") { res.end("ok"); return setTimeout(() => process.exit(0), 50); }
     if (url.pathname === "/hook") {
       let body = "";
@@ -287,7 +287,7 @@ wss.on("connection", (ws, req) => {
         turn.said = true;
         emit({ type: "ask", id: m.id, tab: tab.key, question: m.question, options: m.options });
         setState(tab, "waiting");
-        notifyMac(`CodeEasy · ${tab.name}`, m.question);
+        notifyMac(`Lazypad · ${tab.name}`, m.question);
       }
     });
     return;
@@ -323,7 +323,7 @@ setInterval(() => {
 server.on("error", (e) => {
   // Başka bir merkez zaten çalışıyorsa sessizce çık
   if (e.code === "EADDRINUSE") process.exit(0);
-  console.error("codeeasy hub:", e.message);
+  console.error("lazypad hub:", e.message);
   process.exit(1);
 });
-server.listen(PORT, HOST, () => console.error(`codeeasy: merkez hazır → ${BASE}`));
+server.listen(PORT, HOST, () => console.error(`lazypad: merkez hazır → ${BASE}`));
